@@ -4,11 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -21,6 +22,7 @@ import com.example.projectchat3.ui.auth.MainActivity
 import com.example.projectchat3.ui.chats.ChatActivity
 import com.example.projectchat3.ui.user.UserViewModel
 import com.example.projectchat3.ui.user.UserViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class UserListActivity : AppCompatActivity() {
@@ -42,7 +44,7 @@ class UserListActivity : AppCompatActivity() {
         }
 
         val tvTitle = findViewById<TextView>(R.id.tvTitle)
-        val btnBack = findViewById<ImageButton>(R.id.btnBack)
+        val btnLogout = findViewById<Button>(R.id.btnLogout)
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerUsers)
         val etSearch = findViewById<EditText>(R.id.etSearch)
 
@@ -74,9 +76,18 @@ class UserListActivity : AppCompatActivity() {
             }
         })
 
-        // Back button
-        btnBack.setOnClickListener {
-            startActivity(Intent(this, MainActivity::class.java))
+        // 🔥 Logout button
+        btnLogout.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Đăng xuất")
+                .setMessage("Bố có chắc muốn đăng xuất không?")
+                .setPositiveButton("Có") { _, _ ->
+                    FirebaseAuth.getInstance().signOut()
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                }
+                .setNegativeButton("Không", null)
+                .show()
         }
 
         // Load data
