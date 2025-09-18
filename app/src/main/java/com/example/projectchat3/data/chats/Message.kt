@@ -6,8 +6,8 @@ data class Message(
     val id: String = "",
     val roomId: String = "",
     val senderId: String = "",
-    val text: String = "",
-    val deleted: Boolean = false,
+    var text: String = "",
+    var deleted: Boolean = false,
     val timestamp: Timestamp = Timestamp.now()
 )
 

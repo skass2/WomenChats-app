@@ -1,0 +1,10 @@
+so1: 
+	*Pust code
+so2: 
+	*Đồng bộ chức năng đối với web
+so3: 
+	*Sửa lại các layout: thay đổi hoàn toàn các layout cho đẹp mắt hơn
+	*sửa lại phần xóa tin nhắn: xóa sẽ tẩy trắng trên firebase
+so4: 
+	*Sưa lại phần đăng nhập: lưu đăng nhập mỗi khi mở ứng dụng
+	*Thêm sự kiện logout: thay đổi btnBack = btnLogout và thê sự kiện

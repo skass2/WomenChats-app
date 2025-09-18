@@ -1,8 +1,13 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_edit"
-        android:title="Sửa" />
+        android:title="Sửa"
+        android:icon="@android:drawable/ic_menu_edit"
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_delete"
-        android:title="Xóa" />
+        android:title="Xóa"
+        android:icon="@android:drawable/ic_menu_delete"
+        app:showAsAction="always" />
 </menu>

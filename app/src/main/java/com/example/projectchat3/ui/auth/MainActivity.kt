@@ -37,12 +37,19 @@ class MainActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
+        // ✅ Nếu user đã đăng nhập thì vào thẳng UserListActivity
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, UserListActivity::class.java))
+            finish()
+            return
+        }
+
         val email = findViewById<EditText>(R.id.etEmail)
         val password = findViewById<EditText>(R.id.etPassword)
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val Register = findViewById<TextView>(R.id.txtRegister)
 
-        password.setOnTouchListener { v, event ->
+        password.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 if (event.rawX >= (password.right - password.compoundDrawables[2].bounds.width())) {
                     isPasswordVisible = !isPasswordVisible
@@ -50,7 +57,8 @@ class MainActivity : AppCompatActivity() {
                         password.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
                         password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide, 0)
                     } else {
-                        password.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                        password.inputType =
+                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                         password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide_off, 0)
                     }
                     password.setSelection(password.text.length)
@@ -65,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnLogin.setOnClickListener {
-            if(email.text.toString().isEmpty() || password.text.toString().isEmpty()){
+            if (email.text.toString().isEmpty() || password.text.toString().isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }

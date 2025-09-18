@@ -22,6 +22,7 @@ class MessageAdapter(
 
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtMessage: TextView = view.findViewById(R.id.txtMessage)
+        val container: LinearLayout = view.findViewById(R.id.messageContainer)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
@@ -32,22 +33,37 @@ class MessageAdapter(
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
         val message = messages[position]
+        val isMe = message.senderId == currentUserId
 
         if (message.deleted) {
+            // Tin nhắn đã xóa
             holder.txtMessage.text = "Tin nhắn này đã bị xóa!"
             holder.txtMessage.setTypeface(null, Typeface.ITALIC)
-            holder.txtMessage.setTextColor(Color.GRAY)
+            holder.txtMessage.setTextColor(Color.WHITE)
+            holder.txtMessage.setBackgroundResource(R.drawable.bg_message_deleted)
+            holder.container.gravity = if (isMe) Gravity.END else Gravity.START
+
+            // Không bật menu
             holder.itemView.setOnLongClickListener { true }
         } else {
+            // Tin nhắn bình thường
             holder.txtMessage.text = message.text
             holder.txtMessage.setTypeface(null, Typeface.NORMAL)
-            holder.txtMessage.setTextColor(Color.BLACK)
 
+            if (isMe) {
+                holder.txtMessage.setBackgroundResource(R.drawable.bg_message_right)
+                holder.txtMessage.setTextColor(Color.WHITE)
+                holder.container.gravity = Gravity.END
+            } else {
+                holder.txtMessage.setBackgroundResource(R.drawable.bg_message_left)
+                holder.txtMessage.setTextColor(Color.BLACK)
+                holder.container.gravity = Gravity.START
+            }
+
+            // Menu sửa / xóa
             holder.itemView.setOnLongClickListener {
-                if (message.senderId == currentUserId) {
-                    val gravity = if (message.senderId == currentUserId) Gravity.END else Gravity.START
-
-                    val popup = PopupMenu(holder.itemView.context, holder.itemView, gravity)
+                if (isMe) {
+                    val popup = PopupMenu(holder.itemView.context, holder.txtMessage)
                     popup.menuInflater.inflate(R.menu.message_menu, popup.menu)
 
                     popup.setOnMenuItemClickListener {
@@ -57,7 +73,7 @@ class MessageAdapter(
                                 true
                             }
                             R.id.action_delete -> {
-                                onDelete(message)
+                                onDelete(message) //gọi callback
                                 true
                             }
                             else -> false
@@ -67,13 +83,8 @@ class MessageAdapter(
                 }
                 true
             }
-
         }
-        val params = holder.txtMessage.layoutParams as LinearLayout.LayoutParams
-        params.gravity = if (message.senderId == currentUserId) Gravity.END else Gravity.START
-        holder.txtMessage.layoutParams = params
     }
-
 
     override fun getItemCount() = messages.size
 
