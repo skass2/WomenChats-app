@@ -1,0 +1,2 @@
+so1: Pust code
+so2: Đồng bộ chức năng đối với web
