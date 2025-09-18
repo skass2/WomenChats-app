@@ -3,5 +3,5 @@ so1:
 so2: 
 	*Đồng bộ chức năng đối với web
 so3: 
-	*Sửa lại các layout
-	*sửa lại phần xóa tin nhắn
+	*Sửa lại các layout: thay đổi hoàn toàn các layout cho đẹp mắt hơn
+	*sửa lại phần xóa tin nhắn: xóa sẽ tẩy trắng trên firebase

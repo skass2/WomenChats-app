@@ -35,7 +35,7 @@
         app:layout_constraintStart_toEndOf="@id/btnBack"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/btnBack"
-        app:layout_constraintBottom_toBottomOf="@id/btnBack"/>
+        app:layout_constraintBottom_toBottomOf="@id/btnBack" />
 
     <!-- Danh sách tin nhắn -->
     <androidx.recyclerview.widget.RecyclerView
@@ -47,38 +47,47 @@
         app:layout_constraintTop_toBottomOf="@id/btnBack"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/edtMessage"/>
+        app:layout_constraintBottom_toTopOf="@id/input_area" />
 
-    <!-- Ô nhập tin nhắn -->
-    <EditText
-        android:id="@+id/edtMessage"
+    <!-- Khu vực nhập tin nhắn -->
+    <LinearLayout
+        android:id="@+id/input_area"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Nhập tin nhắn..."
-        android:background="@drawable/edittext_bg"
-        android:imeOptions="actionSend"
-        android:inputType="textCapSentences|textMultiLine"
-        android:scrollHorizontally="false"
-        android:ellipsize="none"
-        android:maxLines="4"
-        android:padding="12dp"
-        android:textSize="16sp"
-        android:layout_margin="8dp"
+        android:orientation="horizontal"
+        android:padding="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnSend"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Nút Gửi -->
-    <Button
-        android:id="@+id/btnSend"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Gửi"
-        android:textSize="16sp"
-        android:textColor="#FFFFFF"
-        android:background="@drawable/btn_primary"
-        android:layout_margin="8dp"
-        app:layout_constraintTop_toTopOf="@id/edtMessage"
-        app:layout_constraintBottom_toBottomOf="@id/edtMessage"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        <!-- Ô nhập tin nhắn -->
+        <EditText
+            android:id="@+id/edtMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Nhập tin nhắn..."
+            android:background="@drawable/edittext_bg"
+            android:imeOptions="actionSend"
+            android:inputType="textCapSentences|textMultiLine"
+            android:scrollHorizontally="false"
+            android:ellipsize="none"
+            android:maxLines="4"
+            android:padding="12dp"
+            android:textSize="16sp"
+            android:layout_margin="4dp" />
+
+        <!-- Nút Gửi -->
+        <Button
+            android:id="@+id/btnSend"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="Gửi"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/btn_primary"
+            android:layout_margin="4dp" />
+
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

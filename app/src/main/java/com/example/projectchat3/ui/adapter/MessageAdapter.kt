@@ -36,16 +36,17 @@ class MessageAdapter(
         val isMe = message.senderId == currentUserId
 
         if (message.deleted) {
-            // Hiển thị tin nhắn đã xóa
+            // Tin nhắn đã xóa
             holder.txtMessage.text = "Tin nhắn này đã bị xóa!"
             holder.txtMessage.setTypeface(null, Typeface.ITALIC)
             holder.txtMessage.setTextColor(Color.WHITE)
             holder.txtMessage.setBackgroundResource(R.drawable.bg_message_deleted)
             holder.container.gravity = if (isMe) Gravity.END else Gravity.START
 
-            holder.itemView.setOnLongClickListener { true } // disable menu
+            // Không bật menu
+            holder.itemView.setOnLongClickListener { true }
         } else {
-            // Hiển thị tin nhắn bình thường
+            // Tin nhắn bình thường
             holder.txtMessage.text = message.text
             holder.txtMessage.setTypeface(null, Typeface.NORMAL)
 
@@ -59,7 +60,7 @@ class MessageAdapter(
                 holder.container.gravity = Gravity.START
             }
 
-            // Menu sửa/xóa khi giữ lâu
+            // Menu sửa / xóa
             holder.itemView.setOnLongClickListener {
                 if (isMe) {
                     val popup = PopupMenu(holder.itemView.context, holder.txtMessage)
@@ -72,7 +73,7 @@ class MessageAdapter(
                                 true
                             }
                             R.id.action_delete -> {
-                                onDelete(message)
+                                onDelete(message) //gọi callback
                                 true
                             }
                             else -> false

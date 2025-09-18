@@ -31,6 +31,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageButton
     private lateinit var currentUserId: String
     private lateinit var chatUserId: String
+//    private lateinit var softInputAssist: SoftInputAssist
 
     private val viewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()), application)
@@ -50,7 +51,9 @@ class ChatActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomInset)
             insets
         }
+
 //        softInputAssist = SoftInputAssist(this)
+
         currentUserId = FirebaseAuth.getInstance().uid!!
         chatUserId = intent.getStringExtra("uid")!!
 
@@ -83,7 +86,7 @@ class ChatActivity : AppCompatActivity() {
 
         // Hàm gửi chung
         fun sendMessage() {
-            val text = edtMessage.text.toString().trim() // ✅ trim khoảng trắng
+            val text = edtMessage.text.toString().trim()
             if (text.isNotEmpty()) {
                 val msg = Message(senderId = currentUserId, text = text)
                 viewModel.sendMessage(msg, participants)
@@ -151,7 +154,7 @@ class ChatActivity : AppCompatActivity() {
                 val participants = listOf(currentUserId, chatUserId)
                 viewModel.getOrCreateChat(participants) { chatId ->
                     if (chatId != null) {
-                        viewModel.deleteMessage(chatId, message.id)
+                        viewModel.deleteMessage(chatId, message.id) // lúc này sẽ update deleted=true
                     }
                 }
             }
@@ -159,17 +162,4 @@ class ChatActivity : AppCompatActivity() {
             .show()
     }
 
-//    override fun onResume() {
-//        super.onResume()
-//        softInputAssist.onResume()
-//    }
-//
-//    override fun onPause() {
-//        super.onPause()
-//        softInputAssist.onPause()
-//    }
-//    override fun onDestroy() {
-//        super.onDestroy()
-//        softInputAssist.onDestroy()
-//    }
 }

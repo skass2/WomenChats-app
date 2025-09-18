@@ -85,11 +85,12 @@ class ChatRepository(private val db: FirebaseFirestore) {
             .document(messageId)
             .update(
                 mapOf(
-                    "text" to "[Tin nhắn đã bị xóa]",
-                    "deleted" to true
+                    "text" to "",        // để trống text
+                    "deleted" to true    // đánh dấu đã xoá
                 )
             )
             .addOnSuccessListener { onResult(true) }
             .addOnFailureListener { onResult(false) }
     }
+
 }
