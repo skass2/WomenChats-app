@@ -17,6 +17,23 @@
             </InsightsFilterSettings>
           </value>
         </entry>
+        <entry key="Firebase Crashlytics">
+          <value>
+            <InsightsFilterSettings>
+              <option name="connection">
+                <ConnectionSetting>
+                  <option name="appId" value="com.example.projectchat3" />
+                  <option name="mobileSdkAppId" value="1:635801605784:android:f33f4c9ec80b1193ae62ed" />
+                  <option name="projectId" value="projectchat3-b0aa1" />
+                  <option name="projectNumber" value="635801605784" />
+                </ConnectionSetting>
+              </option>
+              <option name="signal" value="SIGNAL_UNSPECIFIED" />
+              <option name="timeIntervalDays" value="THIRTY_DAYS" />
+              <option name="visibilityType" value="ALL" />
+            </InsightsFilterSettings>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

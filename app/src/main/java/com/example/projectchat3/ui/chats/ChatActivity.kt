@@ -50,7 +50,6 @@ class ChatActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomInset)
             insets
         }
-//        softInputAssist = SoftInputAssist(this)
         currentUserId = FirebaseAuth.getInstance().uid!!
         chatUserId = intent.getStringExtra("uid")!!
 
@@ -159,17 +158,4 @@ class ChatActivity : AppCompatActivity() {
             .show()
     }
 
-//    override fun onResume() {
-//        super.onResume()
-//        softInputAssist.onResume()
-//    }
-//
-//    override fun onPause() {
-//        super.onPause()
-//        softInputAssist.onPause()
-//    }
-//    override fun onDestroy() {
-//        super.onDestroy()
-//        softInputAssist.onDestroy()
-//    }
 }
