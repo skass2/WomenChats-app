@@ -3,7 +3,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:windowSoftInputMode="adjustResize"
+    >
 
     <ImageButton
         android:id="@+id/btnBack"
@@ -37,32 +39,35 @@
         app:layout_constraintTop_toBottomOf="@id/btnBack"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/edtMessage"
+        app:layout_constraintBottom_toTopOf="@id/input_area"
         android:padding="10dp"
         />
 
-    <EditText
-        android:id="@+id/edtMessage"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:id="@+id/input_area"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nhập tin nhắn"
-        android:background="@drawable/bogoc"
-        android:imeOptions="actionSend"
-        android:inputType="text"
-        android:singleLine="true"
-        android:layout_margin="8dp"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnSend" />
+        android:orientation="horizontal"
+        >
 
-    <Button
-        android:id="@+id/btnSend"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        android:layout_margin="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="@id/edtMessage"
-        app:layout_constraintTop_toTopOf="@id/edtMessage" />
+        <EditText
+            android:id="@+id/edtMessage"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Nhập tin nhắn"
+            android:background="@drawable/bogoc"
+            android:imeOptions="actionSend"
+            android:inputType="text"
+            android:singleLine="true"
+            android:layout_margin="8dp" />
 
+        <Button
+            android:id="@+id/btnSend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send"
+            android:layout_margin="8dp" />
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

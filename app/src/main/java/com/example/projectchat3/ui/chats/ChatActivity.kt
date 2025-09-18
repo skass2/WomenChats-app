@@ -43,10 +43,14 @@ class ChatActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val bottomInset = maxOf(imeInsets.bottom, navInsets.bottom)
+
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomInset)
             insets
         }
-
+//        softInputAssist = SoftInputAssist(this)
         currentUserId = FirebaseAuth.getInstance().uid!!
         chatUserId = intent.getStringExtra("uid")!!
 
@@ -154,4 +158,18 @@ class ChatActivity : AppCompatActivity() {
             .setNegativeButton("Hủy", null)
             .show()
     }
+
+//    override fun onResume() {
+//        super.onResume()
+//        softInputAssist.onResume()
+//    }
+//
+//    override fun onPause() {
+//        super.onPause()
+//        softInputAssist.onPause()
+//    }
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        softInputAssist.onDestroy()
+//    }
 }
