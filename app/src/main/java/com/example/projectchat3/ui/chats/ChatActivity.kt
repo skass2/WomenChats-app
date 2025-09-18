@@ -1,6 +1,8 @@
 package com.example.projectchat3.ui.chats
 
 import android.os.Bundle
+import android.view.KeyEvent
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -13,12 +15,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.projectchat3.data.chats.Message
 import com.example.projectchat3.R
+import com.example.projectchat3.data.chats.Message
 import com.example.projectchat3.data.chats.ChatRepository
-import com.example.projectchat3.data.chats.ChatUtils
-import com.example.projectchat3.ui.adapter.MessageAdapter
 import com.example.projectchat3.data.users.User
+import com.example.projectchat3.ui.adapter.MessageAdapter
 import com.example.projectchat3.ui.chat.ChatViewModel
 import com.example.projectchat3.ui.chat.ChatViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
@@ -30,10 +31,9 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageButton
     private lateinit var currentUserId: String
     private lateinit var chatUserId: String
-    private lateinit var roomId: String
 
     private val viewModel: ChatViewModel by viewModels {
-        ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()))
+        ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()), application)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +50,7 @@ class ChatActivity : AppCompatActivity() {
         currentUserId = FirebaseAuth.getInstance().uid!!
         chatUserId = intent.getStringExtra("uid")!!
 
-        // Title
+        // Title hiển thị tên người đang chat
         tvTitle = findViewById(R.id.tvTitle)
         FirebaseFirestore.getInstance().collection("users").document(chatUserId).get()
             .addOnSuccessListener { doc ->
@@ -58,12 +58,9 @@ class ChatActivity : AppCompatActivity() {
                 tvTitle.text = chatUser?.name ?: "User"
             }
 
-        // Back button
+        // Nút Back
         btnBack = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
-
-        // Room id (thống nhất với ChatUtils)
-        roomId = ChatUtils.generateRoomId(currentUserId, chatUserId)
 
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerMessages)
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -75,29 +72,50 @@ class ChatActivity : AppCompatActivity() {
         )
         recyclerView.adapter = adapter
 
-        // Send message
+        // Gửi tin nhắn
         val edtMessage = findViewById<EditText>(R.id.edtMessage)
         val btnSend = findViewById<Button>(R.id.btnSend)
-        btnSend.setOnClickListener {
-            val msg = Message(
-                senderId = currentUserId,
-                roomId = roomId,                // ✅ gán roomId vào message luôn
-                text = edtMessage.text.toString()
-            )
-            if (msg.text.isNotEmpty()) {
-                viewModel.sendMessage(roomId, msg)
+        val participants = listOf(currentUserId, chatUserId)
+
+        // Hàm gửi chung
+        fun sendMessage() {
+            val text = edtMessage.text.toString().trim() // ✅ trim khoảng trắng
+            if (text.isNotEmpty()) {
+                val msg = Message(senderId = currentUserId, text = text)
+                viewModel.sendMessage(msg, participants)
                 edtMessage.text.clear()
             } else {
                 edtMessage.error = "Nhập nội dung trước khi gửi nhé!"
             }
         }
 
-        viewModel.messages.observe(this) { list ->
-            adapter.updateMessages(list)
-            recyclerView.scrollToPosition(list.size - 1)
+        // Nhấn nút gửi
+        btnSend.setOnClickListener { sendMessage() }
+
+        // Nhấn Enter để gửi
+        edtMessage.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEND ||
+                (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+            ) {
+                sendMessage()
+                true
+            } else {
+                false
+            }
         }
 
-        viewModel.loadMessages(roomId)
+        // Quan sát messages realtime
+        viewModel.getOrCreateChat(participants) { chatId ->
+            if (chatId != null) {
+                viewModel.loadMessages(chatId)
+                viewModel.messages.observe(this) { list ->
+                    adapter.updateMessages(list)
+                    if (list.isNotEmpty()) {
+                        recyclerView.scrollToPosition(list.size - 1)
+                    }
+                }
+            }
+        }
     }
 
     private fun showEditDialog(message: Message) {
@@ -107,9 +125,14 @@ class ChatActivity : AppCompatActivity() {
             .setTitle("Sửa tin nhắn")
             .setView(input)
             .setPositiveButton("Lưu") { _, _ ->
-                val newText = input.text.toString()
+                val newText = input.text.toString().trim()
                 if (newText.isNotEmpty()) {
-                    viewModel.updateMessage(roomId, message.id, newText)
+                    val participants = listOf(currentUserId, chatUserId)
+                    viewModel.getOrCreateChat(participants) { chatId ->
+                        if (chatId != null) {
+                            viewModel.updateMessage(chatId, message.id, newText)
+                        }
+                    }
                 }
             }
             .setNegativeButton("Hủy", null)
@@ -121,7 +144,12 @@ class ChatActivity : AppCompatActivity() {
             .setTitle("Xóa tin nhắn")
             .setMessage("Bạn có chắc muốn xóa tin nhắn này?")
             .setPositiveButton("Xóa") { _, _ ->
-                viewModel.deleteMessage(roomId, message.id)
+                val participants = listOf(currentUserId, chatUserId)
+                viewModel.getOrCreateChat(participants) { chatId ->
+                    if (chatId != null) {
+                        viewModel.deleteMessage(chatId, message.id)
+                    }
+                }
             }
             .setNegativeButton("Hủy", null)
             .show()
