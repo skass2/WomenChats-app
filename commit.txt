@@ -8,3 +8,10 @@ so3:
 so4: 
 	*Sưa lại phần đăng nhập: lưu đăng nhập mỗi khi mở ứng dụng
 	*Thêm sự kiện logout: thay đổi btnBack = btnLogout và thê sự kiện
+so5: Bản này update rất nhiều, sinh file và chức năng cực kỳ nhiều, tính từ các layout, menu. Chú ý lần update này.
+	*Thêm friendship
+	*Thêm tính năng chia menu chức năng
+	*Thêm MainHomeActivity để chứa các menu chức năng
+	*Thêm tính năng kết bạn, nhận và gửi lời mời
+	*Sửa một số layout
+	

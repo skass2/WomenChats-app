@@ -40,4 +40,13 @@ class UserRepository(private val db: FirebaseFirestore) {
             }
             .addOnFailureListener { onResult(emptyList()) }
     }
+
+    // ✅ Thêm hàm getUserById
+    fun getUserById(uid: String, onResult: (User?) -> Unit) {
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                onResult(doc.toObject(User::class.java))
+            }
+            .addOnFailureListener { onResult(null) }
+    }
 }

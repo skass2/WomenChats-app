@@ -31,6 +31,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageButton
     private lateinit var currentUserId: String
     private lateinit var chatUserId: String
+    private lateinit var chatId: String
 
     private val viewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()), application)
@@ -46,14 +47,17 @@ class ChatActivity : AppCompatActivity() {
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val bottomInset = maxOf(imeInsets.bottom, navInsets.bottom)
-
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomInset)
             insets
         }
+
         currentUserId = FirebaseAuth.getInstance().uid!!
         chatUserId = intent.getStringExtra("uid")!!
 
-        // Title hiển thị tên người đang chat
+        // 🔥 chuẩn hoá chatId với Web
+        chatId = listOf(currentUserId, chatUserId).sorted().joinToString("_")
+
+        // Title hiển thị tên
         tvTitle = findViewById(R.id.tvTitle)
         FirebaseFirestore.getInstance().collection("users").document(chatUserId).get()
             .addOnSuccessListener { doc ->
@@ -75,14 +79,12 @@ class ChatActivity : AppCompatActivity() {
         )
         recyclerView.adapter = adapter
 
-        // Gửi tin nhắn
         val edtMessage = findViewById<EditText>(R.id.edtMessage)
         val btnSend = findViewById<Button>(R.id.btnSend)
         val participants = listOf(currentUserId, chatUserId)
 
-        // Hàm gửi chung
         fun sendMessage() {
-            val text = edtMessage.text.toString().trim() // ✅ trim khoảng trắng
+            val text = edtMessage.text.toString().trim()
             if (text.isNotEmpty()) {
                 val msg = Message(senderId = currentUserId, text = text)
                 viewModel.sendMessage(msg, participants)
@@ -92,30 +94,22 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // Nhấn nút gửi
         btnSend.setOnClickListener { sendMessage() }
-
-        // Nhấn Enter để gửi
         edtMessage.setOnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_SEND ||
                 (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
             ) {
-                sendMessage()
-                true
-            } else {
-                false
-            }
+                sendMessage(); true
+            } else false
         }
 
-        // Quan sát messages realtime
-        viewModel.getOrCreateChat(participants) { chatId ->
-            if (chatId != null) {
-                viewModel.loadMessages(chatId)
+        // load tin nhắn realtime
+        viewModel.getOrCreateChat(participants) { id ->
+            if (id != null) {
+                viewModel.loadMessages(id)
                 viewModel.messages.observe(this) { list ->
                     adapter.updateMessages(list)
-                    if (list.isNotEmpty()) {
-                        recyclerView.scrollToPosition(list.size - 1)
-                    }
+                    if (list.isNotEmpty()) recyclerView.scrollToPosition(list.size - 1)
                 }
             }
         }
@@ -157,5 +151,4 @@ class ChatActivity : AppCompatActivity() {
             .setNegativeButton("Hủy", null)
             .show()
     }
-
 }

@@ -12,13 +12,18 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_logo_background"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ProjectChat3"
-        >
+        android:theme="@style/Theme.ProjectChat3">
         <activity
-            android:name=".ui.auth.RegisterActivity"
+            android:name=".ui.home.MainHomeActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.users.UserListActivity"
+            android:name=".ui.friend.FriendListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.friend.FriendRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.auth.RegisterActivity"
             android:exported="false" />
         <activity
             android:name=".ui.chats.ChatActivity"

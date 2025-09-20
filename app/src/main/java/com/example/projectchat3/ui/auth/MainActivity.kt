@@ -14,7 +14,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.projectchat3.R
 import com.example.projectchat3.ui.auth.RegisterActivity
-import com.example.projectchat3.ui.users.UserListActivity
+import com.example.projectchat3.ui.home.MainHomeActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -37,9 +37,9 @@ class MainActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        // ✅ Nếu user đã đăng nhập thì vào thẳng UserListActivity
+        // ✅ Nếu user đã đăng nhập thì vào thẳng MainHomeActivity
         if (auth.currentUser != null) {
-            startActivity(Intent(this, UserListActivity::class.java))
+            startActivity(Intent(this, MainHomeActivity::class.java))
             finish()
             return
         }
@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val Register = findViewById<TextView>(R.id.txtRegister)
 
+        // toggle password visible
         password.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 if (event.rawX >= (password.right - password.compoundDrawables[2].bounds.width())) {
@@ -80,7 +81,7 @@ class MainActivity : AppCompatActivity() {
             auth.signInWithEmailAndPassword(email.text.toString(), password.text.toString())
                 .addOnCompleteListener {
                     if (it.isSuccessful) {
-                        startActivity(Intent(this, UserListActivity::class.java))
+                        startActivity(Intent(this, MainHomeActivity::class.java))
                         finish()
                     } else {
                         Toast.makeText(this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show()
