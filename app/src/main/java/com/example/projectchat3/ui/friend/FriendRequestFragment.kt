@@ -17,10 +17,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class FriendRequestFragment : Fragment() {
 
-    private lateinit var adapter: FriendRequestAdapter
+    private lateinit var receivedAdapter: FriendRequestAdapter
+    private lateinit var sentAdapter: FriendRequestAdapter
 
     private val viewModel: FriendshipViewModel by viewModels {
-        FriendshipViewModelFactory(FriendshipRepository(FirebaseFirestore.getInstance()))
+        FriendshipViewModelFactory(
+            FriendshipRepository(FirebaseFirestore.getInstance())
+        )
     }
 
     override fun onCreateView(
@@ -28,26 +31,42 @@ class FriendRequestFragment : Fragment() {
     ): View {
         val view = inflater.inflate(R.layout.fragment_friend_request, container, false)
 
-        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerFriendRequests)
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-
-        adapter = FriendRequestAdapter(
+        // RecyclerView cho lời mời đã nhận
+        val recyclerReceived = view.findViewById<RecyclerView>(R.id.recyclerFriendRequestsReceived)
+        recyclerReceived.layoutManager = LinearLayoutManager(requireContext())
+        receivedAdapter = FriendRequestAdapter(
             requests = mutableListOf(),
             db = FirebaseFirestore.getInstance(),
+            type = FriendRequestAdapter.RequestType.RECEIVED,
             onAccept = { request: Friendship -> viewModel.acceptRequest(request) },
             onReject = { request: Friendship -> viewModel.rejectRequest(request) }
         )
-        recyclerView.adapter = adapter
+        recyclerReceived.adapter = receivedAdapter
 
+        // RecyclerView cho lời mời đã gửi
+        val recyclerSent = view.findViewById<RecyclerView>(R.id.recyclerFriendRequestsSent)
+        recyclerSent.layoutManager = LinearLayoutManager(requireContext())
+        sentAdapter = FriendRequestAdapter(
+            requests = mutableListOf(),
+            db = FirebaseFirestore.getInstance(),
+            type = FriendRequestAdapter.RequestType.SENT,
+            onCancel = { request: Friendship -> viewModel.cancelRequest(request) } // dùng cancelRequest
+        )
+        recyclerSent.adapter = sentAdapter
+
+        // Lắng nghe LiveData
         viewModel.incomingRequests.observe(viewLifecycleOwner) { list ->
-            adapter.updateRequests(list)
+            receivedAdapter.updateRequests(list)
+        }
+        viewModel.sentRequests.observe(viewLifecycleOwner) { list ->
+            sentAdapter.updateRequests(list)
         }
 
-        val currentUid = FirebaseAuth.getInstance().uid
-        if (currentUid != null) {
-            viewModel.loadIncomingRequests(currentUid)
+        // Load dữ liệu
+        FirebaseAuth.getInstance().uid?.let { uid ->
+            viewModel.loadIncomingRequests(uid)
+            viewModel.loadSentRequests(uid)
         }
-
         return view
     }
 }

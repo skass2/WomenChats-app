@@ -14,12 +14,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 class FriendRequestAdapter(
     private var requests: MutableList<Friendship>,
     private val db: FirebaseFirestore,
-    private val onAccept: (Friendship) -> Unit,
-    private val onReject: (Friendship) -> Unit
+    private val type: RequestType,
+    private val onAccept: ((Friendship) -> Unit)? = null,
+    private val onReject: ((Friendship) -> Unit)? = null,
+    private val onCancel: ((Friendship) -> Unit)? = null
 ) : RecyclerView.Adapter<FriendRequestAdapter.RequestViewHolder>() {
 
+    enum class RequestType { RECEIVED, SENT }
+
     inner class RequestViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvName: TextView = itemView.findViewById(R.id.tvUserName)
+        val tvName: TextView = itemView.findViewById(R.id.tvName)
         val btnAccept: Button = itemView.findViewById(R.id.btnAccept)
         val btnReject: Button = itemView.findViewById(R.id.btnReject)
     }
@@ -36,22 +40,33 @@ class FriendRequestAdapter(
             it != FirebaseAuth.getInstance().uid
         } ?: ""
 
-        // Lấy tên user từ Firestore
         db.collection("users").document(otherUid).get()
             .addOnSuccessListener { doc ->
                 val name = doc.getString("name") ?: "Unknown"
                 holder.tvName.text = name
             }
 
-        holder.btnAccept.setOnClickListener { onAccept(request) }
-        holder.btnReject.setOnClickListener { onReject(request) }
+        when (type) {
+            RequestType.RECEIVED -> {
+                holder.btnAccept.visibility = View.VISIBLE
+                holder.btnReject.text = "Từ chối"
+                holder.btnAccept.setOnClickListener { onAccept?.invoke(request) }
+                holder.btnReject.setOnClickListener { onReject?.invoke(request) }
+            }
+            RequestType.SENT -> {
+                holder.btnAccept.visibility = View.GONE
+                holder.btnReject.text = "Thu hồi"
+                holder.btnReject.setOnClickListener { onCancel?.invoke(request) }
+            }
+        }
     }
 
     override fun getItemCount() = requests.size
 
-    fun updateRequests(newList: List<Friendship>) {
+    fun updateRequests(newRequests: List<Friendship>) {
         requests.clear()
-        requests.addAll(newList)
+        requests.addAll(newRequests)
         notifyDataSetChanged()
     }
 }
+

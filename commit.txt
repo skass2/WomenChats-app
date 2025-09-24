@@ -14,4 +14,8 @@ so5: Bản này update rất nhiều, sinh file và chức năng cực kỳ nhi�
 	*Thêm MainHomeActivity để chứa các menu chức năng
 	*Thêm tính năng kết bạn, nhận và gửi lời mời
 	*Sửa một số layout
+so6: 
+	*Sửa lại kết bạn dựa theo rules
+	*Layout lời mời đã sửa, sẽ hiện cả lời mười đã gửi đi và nhận được
+	*Sửa lại id friendship theo định dạng uid1_uid2
 	

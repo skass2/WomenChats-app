@@ -32,6 +32,7 @@ class FriendRequestActivity : AppCompatActivity() {
         adapter = FriendRequestAdapter(
             requests = mutableListOf(),
             db = FirebaseFirestore.getInstance(),
+            type = FriendRequestAdapter.RequestType.RECEIVED,
             onAccept = { request: Friendship -> viewModel.acceptRequest(request) },
             onReject = { request: Friendship -> viewModel.rejectRequest(request) }
         )
