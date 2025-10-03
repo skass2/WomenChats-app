@@ -1,50 +1,91 @@
-package com.example.projectchat3.ui.friend
+package com.example.projectchat3.ui.friends
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectchat3.R
-import com.example.projectchat3.data.friends.Friendship
-import com.example.projectchat3.data.friends.FriendshipRepository
-import com.example.projectchat3.ui.adapter.FriendRequestAdapter
+import com.example.projectchat3.data.users.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class FriendRequestActivity : AppCompatActivity() {
 
     private lateinit var adapter: FriendRequestAdapter
-
-    private val viewModel: FriendshipViewModel by viewModels {
-        FriendshipViewModelFactory(FriendshipRepository(FirebaseFirestore.getInstance()))
-    }
+    private val db = FirebaseFirestore.getInstance()
+    private val currentUid = FirebaseAuth.getInstance().uid ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_friend_request)
 
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerFriendRequests)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         adapter = FriendRequestAdapter(
-            requests = mutableListOf(),
-            db = FirebaseFirestore.getInstance(),
-            type = FriendRequestAdapter.RequestType.RECEIVED,
-            onAccept = { request: Friendship -> viewModel.acceptRequest(request) },
-            onReject = { request: Friendship -> viewModel.rejectRequest(request) }
+            requests = emptyList(),
+            onAccept = { user -> acceptRequest(user) },
+            onDecline = { user -> declineRequest(user) }
         )
         recyclerView.adapter = adapter
 
-        viewModel.incomingRequests.observe(this) { list ->
-            adapter.updateRequests(list)
-        }
+        loadFriendRequests()
+    }
 
-        val currentUid = FirebaseAuth.getInstance().uid
-        if (currentUid != null) {
-            viewModel.loadIncomingRequests(currentUid)
+    private fun loadFriendRequests() {
+        db.collection("friend_requests")
+            .whereEqualTo("to", currentUid)
+            .addSnapshotListener { snapshot, _ ->
+                val users = mutableListOf<User>()
+                snapshot?.documents?.forEach { doc ->
+                    val uid = doc.getString("from")
+                    if (uid != null) {
+                        db.collection("users").document(uid).get()
+                            .addOnSuccessListener { userDoc ->
+                                val user = userDoc.toObject(User::class.java)
+                                if (user != null) {
+                                    users.add(user)
+                                    adapter.updateList(users)
+                                }
+                            }
+                    }
+                }
+            }
+    }
+
+    private fun acceptRequest(user: User) {
+        val batch = db.batch()
+
+        val currentUserRef = db.collection("users").document(currentUid)
+            .collection("friends").document(user.uid)
+        val friendUserRef = db.collection("users").document(user.uid)
+            .collection("friends").document(currentUid)
+
+        batch.set(currentUserRef, user)
+        batch.set(friendUserRef, mapOf("uid" to currentUid)) // chỉ lưu uid của mình
+
+        // xóa request
+        val query = db.collection("friend_requests")
+            .whereEqualTo("from", user.uid)
+            .whereEqualTo("to", currentUid)
+
+        query.get().addOnSuccessListener { result ->
+            for (doc in result) {
+                batch.delete(doc.reference)
+            }
+            batch.commit()
+        }
+    }
+
+    private fun declineRequest(user: User) {
+        val query = db.collection("friend_requests")
+            .whereEqualTo("from", user.uid)
+            .whereEqualTo("to", currentUid)
+
+        query.get().addOnSuccessListener { result ->
+            for (doc in result) {
+                doc.reference.delete()
+            }
         }
     }
 }

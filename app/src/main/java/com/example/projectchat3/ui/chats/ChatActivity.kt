@@ -72,11 +72,11 @@ class ChatActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerMessages)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = MessageAdapter(
-            mutableListOf(),
-            currentUserId,
-            onEdit = { message -> showEditDialog(message) },
-            onDelete = { message -> showDeleteDialog(message) }
+            messages = mutableListOf(),
+            currentUserId = currentUserId,
+            firestore = FirebaseFirestore.getInstance()
         )
+
         recyclerView.adapter = adapter
 
         val edtMessage = findViewById<EditText>(R.id.edtMessage)

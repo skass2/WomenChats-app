@@ -5,9 +5,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.example.projectchat3.data.friends.Friendship
 import com.example.projectchat3.data.friends.FriendshipRepository
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class FriendshipViewModel(private val repo: FriendshipRepository) : ViewModel() {
 
@@ -34,14 +36,25 @@ class FriendshipViewModel(private val repo: FriendshipRepository) : ViewModel() 
     /** Chấp nhận lời mời */
     fun acceptRequest(request: Friendship) {
         val currentUid = FirebaseAuth.getInstance().uid ?: return
-        repo.acceptRequest(request) { success ->
-            _actionResult.postValue(success)
-            if (success) {
+        val otherUid = request.participants.first { it != currentUid }
+
+        viewModelScope.launch {
+            try {
+                // Gọi suspend function mới
+                repo.acceptRequest(request.id, currentUid, otherUid)
+
+                // Sau khi thành công, update UI
+                _actionResult.postValue(true)
                 loadFriends(currentUid)
                 loadIncomingRequests(currentUid)
+            } catch (e: Exception) {
+                // Nếu có lỗi, post false và có thể log
+                _actionResult.postValue(false)
+                Log.e("FriendshipVM", "Accept request failed: ${e.message}")
             }
         }
     }
+
 
     /** Từ chối lời mời đến */
     fun rejectRequest(request: Friendship) {

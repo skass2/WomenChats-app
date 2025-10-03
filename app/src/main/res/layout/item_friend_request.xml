@@ -1,57 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="12dp">
+    android:layout_margin="6dp"
+    android:elevation="6dp"
+    app:cardCornerRadius="16dp"
+    app:cardUseCompatPadding="true">
 
-    <ImageView
-        android:id="@+id/imgAvatar"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/ic_person"
-        android:contentDescription="Avatar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:scaleType="centerCrop"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:clipToOutline="true"
-        android:layout_marginEnd="12dp"/>
-
-    <TextView
-        android:id="@+id/tvName"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="User Name"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:ellipsize="end"
-        android:singleLine="true"
-        app:layout_constraintStart_toEndOf="@id/imgAvatar"
-        app:layout_constraintEnd_toStartOf="@id/btnAccept"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        android:padding="12dp">
 
-    <Button
-        android:id="@+id/btnAccept"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:text="Accept"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        app:layout_constraintEnd_toStartOf="@id/btnReject"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        <ImageView
+            android:id="@+id/imgAvatar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:clipToOutline="true"
+            android:contentDescription="Avatar"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_person"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/btnReject"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:text="Reject"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:ellipsize="end"
+            android:singleLine="true"
+            app:layout_constraintStart_toEndOf="@id/imgAvatar"
+            app:layout_constraintEnd_toStartOf="@id/btnAccept"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <Button
+            android:id="@+id/btnAccept"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Accept"
+            android:layout_margin="5dp"
+            android:backgroundTint="#FFFFFF"
+            android:textColor="@color/black"
+            app:layout_constraintEnd_toStartOf="@id/btnDecline"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <Button
+            android:id="@+id/btnDecline"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Reject"
+            android:layout_margin="5dp"
+            android:backgroundTint="#FFFFFF"
+            android:textColor="@color/black"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

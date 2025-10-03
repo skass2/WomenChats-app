@@ -18,4 +18,11 @@ so6:
 	*Sửa lại kết bạn dựa theo rules
 	*Layout lời mời đã sửa, sẽ hiện cả lời mười đã gửi đi và nhận được
 	*Sửa lại id friendship theo định dạng uid1_uid2
+so7:
+	*Thêm tính năng kiểm tra mật khẩu, log điều kiện mật khẩu ra màn hình
+	*Thêm tính năng xác thực email
+	*Thêm tính năng đặt avatar và tên sau khi xác thực email
+	*Sửa layout profile thêm các btn thay đổi các trường thông tin
+	*Tính năng sửa avatar chưa hoàn thiện, tính năng bạn bè, và layout lời mời đang dính bug không rõ
+	
 	

@@ -14,12 +14,14 @@
         android:src="@drawable/back"
         android:layout_marginBottom="16dp"
         app:tint="#FFFFFF" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="20dp"
         android:gravity="center">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -41,16 +43,6 @@
             android:layout_marginBottom="14dp"/>
 
         <EditText
-            android:id="@+id/edtUsername"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Họ tên"
-            android:background="@drawable/edittext_bg"
-            android:padding="14dp"
-            android:textSize="16sp"
-            android:layout_marginBottom="14dp"/>
-
-        <EditText
             android:id="@+id/edtPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -63,6 +55,15 @@
             android:textSize="16sp"
             android:layout_marginBottom="14dp"/>
 
+        <TextView
+            android:id="@+id/txtPasswordError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="13sp"
+            android:visibility="gone"
+            android:layout_marginBottom="10dp"/>
+
         <EditText
             android:id="@+id/edtConfirmPassword"
             android:layout_width="match_parent"
@@ -74,7 +75,16 @@
             android:background="@drawable/edittext_bg"
             android:padding="14dp"
             android:textSize="16sp"
-            android:layout_marginBottom="20dp"/>
+            android:layout_marginBottom="14dp"/>
+
+        <TextView
+            android:id="@+id/txtConfirmError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="13sp"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"/>
 
         <Button
             android:id="@+id/btnRegister"

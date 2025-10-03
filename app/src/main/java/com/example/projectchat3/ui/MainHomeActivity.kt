@@ -4,10 +4,10 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.projectchat3.R
-import com.example.projectchat3.ui.friend.FriendListFragment
-import com.example.projectchat3.ui.friend.FriendRequestFragment
-import com.example.projectchat3.ui.users.SearchUserFragment
+import com.example.projectchat3.ui.friends.FriendListFragment
+import com.example.projectchat3.ui.friends.FriendRequestFragment
 import com.example.projectchat3.ui.users.ChatListFragment
+import com.example.projectchat3.ui.users.SearchUserFragment
 import com.example.projectchat3.ui.users.ProfileFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 

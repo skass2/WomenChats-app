@@ -4,13 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.MotionEvent
+import android.view.View
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.projectchat3.R
-import com.example.projectchat3.data.users.User
 import com.example.projectchat3.databinding.ActivityRegisterBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -41,80 +41,75 @@ class RegisterActivity : AppCompatActivity() {
         setupSharedPasswordToggle(binding.edtPassword, binding.edtConfirmPassword)
 
         binding.btnRegister.setOnClickListener {
-            val username = binding.edtUsername.text.toString().trim()
             val email = binding.edtEmail.text.toString().trim()
             val password = binding.edtPassword.text.toString().trim()
             val confirm = binding.edtConfirmPassword.text.toString().trim()
 
-            if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            // reset lỗi
+            binding.txtPasswordError.text = ""
+            binding.txtPasswordError.visibility = View.GONE
+            binding.txtConfirmError.text = ""
+            binding.txtConfirmError.visibility = View.GONE
+
+            if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (password != confirm) {
-                Toast.makeText(this, "Mật khẩu không khớp", Toast.LENGTH_SHORT).show()
+
+            val passError = validatePassword(password)
+            if (passError != null) {
+                binding.txtPasswordError.text = passError
+                binding.txtPasswordError.visibility = View.VISIBLE
                 return@setOnClickListener
             }
 
-            checkUserExists(username, email) { exists, message ->
-                if (exists) {
-                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                } else {
-                    auth.createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                val uid = auth.currentUser?.uid ?: ""
-                                val user = User(uid, username, email)
-
-                                db.collection("users")
-                                    .document(uid)
-                                    .set(user)
-                                    .addOnSuccessListener {
-                                        Toast.makeText(this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
-                                        startActivity(Intent(this, MainActivity::class.java))
-                                        finish()
-                                    }
-                                    .addOnFailureListener { e ->
-                                        Toast.makeText(this, "Lỗi lưu dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
-                            } else {
-                                Toast.makeText(this, "Đăng ký thất bại: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                }
+            if (password != confirm) {
+                binding.txtConfirmError.text = "Mật khẩu xác nhận không khớp"
+                binding.txtConfirmError.visibility = View.VISIBLE
+                return@setOnClickListener
             }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        auth.currentUser?.sendEmailVerification()
+                            ?.addOnSuccessListener {
+                                Toast.makeText(
+                                    this,
+                                    "Đăng ký thành công! Vui lòng xác thực email trước khi đăng nhập.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                auth.signOut()
+                                finish()
+                            }
+                    } else {
+                        binding.txtPasswordError.text = "Đăng ký thất bại: ${task.exception?.message}"
+                        binding.txtPasswordError.visibility = View.VISIBLE
+                    }
+                }
         }
     }
 
-    private fun checkUserExists(username: String, email: String, callback: (Boolean, String) -> Unit) {
-        db.collection("users")
-            .whereEqualTo("username", username)
-            .get()
-            .addOnSuccessListener { usernameDocs ->
-                if (!usernameDocs.isEmpty) {
-                    callback(true, "Tên người dùng đã tồn tại")
-                } else {
-                    db.collection("users")
-                        .whereEqualTo("email", email)
-                        .get()
-                        .addOnSuccessListener { emailDocs ->
-                            if (!emailDocs.isEmpty) {
-                                callback(true, "Email đã được sử dụng")
-                            } else {
-                                callback(false, "")
-                            }
-                        }
-                        .addOnFailureListener {
-                            callback(true, "Lỗi kiểm tra email")
-                        }
-                }
-            }
-            .addOnFailureListener {
-                callback(true, "Lỗi kiểm tra username")
-            }
+    private fun validatePassword(password: String): String? {
+        val errors = mutableListOf<String>()
+
+        if (password.length < 6) errors.add("ít nhất 6 ký tự")
+        if (password.length > 30) errors.add("không quá 30 ký tự")
+        if (!password.any { it.isLowerCase() }) errors.add("ít nhất 1 chữ cái")
+        if (!password.any { it.isDigit() }) errors.add("ít nhất 1 chữ số")
+        if (!password.any { !it.isLetterOrDigit() }) errors.add("ít nhất 1 ký tự đặc biệt")
+
+        return if (errors.isEmpty()) {
+            null
+        } else {
+            "Mật khẩu không hợp lệ: Chứa " + errors.joinToString(", ")
+        }
     }
+
+
     private fun setupSharedPasswordToggle(passwordEdit: EditText, confirmEdit: EditText) {
         val toggleListener = { editText: EditText ->
-            editText.setOnTouchListener { v, event ->
+            editText.setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_UP) {
                     if (event.rawX >= (editText.right - editText.compoundDrawables[2].bounds.width())) {
                         isPasswordVisible = !isPasswordVisible

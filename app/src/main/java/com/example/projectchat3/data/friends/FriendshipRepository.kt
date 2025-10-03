@@ -1,8 +1,11 @@
 package com.example.projectchat3.data.friends
 
 import android.util.Log
+import com.example.projectchat3.data.chats.ChatUtils
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 class FriendshipRepository(private val db: FirebaseFirestore) {
 
@@ -30,37 +33,31 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
                 onResult(false)
             }
     }
+    private val firestore = FirebaseFirestore.getInstance()
+    suspend fun acceptRequest(fid: String, currentUid: String, otherUid: String) {
 
-    fun acceptRequest(request: Friendship, onResult: (Boolean) -> Unit) {
-        val batch = db.batch()
-        val friendshipRef = db.collection("friendships").document(request.id)
-        val chatRef = db.collection("chats").document(request.id)
-
-        batch.update(
-            friendshipRef, mapOf(
-                "status" to "accepted",
-                "updatedAt" to Timestamp.now()
-            )
-        )
-
-        batch.set(
-            chatRef, mapOf(
-                "participants" to request.participants,
-                "lastMessage" to "",
-                "updatedAt" to Timestamp.now()
-            )
-        )
-
-        batch.commit()
-            .addOnSuccessListener {
-                Log.d("FriendRepo", "✅ acceptRequest success: ${request.id}")
-                onResult(true)
+        val friendshipRef = firestore.collection("friendships").document(fid)
+        // 1. Update friendship trước
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(friendshipRef)
+            if (snapshot.getString("status") == "pending") {
+                transaction.update(friendshipRef, "status", "accepted")
+            } else {
+                throw Exception("Friendship not pending")
             }
-            .addOnFailureListener { e ->
-                Log.e("FriendRepo", "❌ acceptRequest failed: ${e.message}")
-                onResult(false)
-            }
+        }.await()
+
+        // 2. Sau khi update thành công → tạo chat
+        val participants = listOf(currentUid, otherUid)
+        val chatId = firestore.collection("chats").document().id
+        val chat = mapOf(
+            "participants" to participants,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        firestore.collection("chats").document(chatId).set(chat).await()
     }
+
+
 
     fun rejectRequest(request: Friendship, onResult: (Boolean) -> Unit) {
         db.collection("friendships")

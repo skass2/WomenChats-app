@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.projectchat3.R
 import com.example.projectchat3.ui.auth.RegisterActivity
 import com.example.projectchat3.ui.home.MainHomeActivity
+import com.example.projectchat3.ui.users.ProfileSetupActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -78,11 +79,27 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
             auth.signInWithEmailAndPassword(email.text.toString(), password.text.toString())
                 .addOnCompleteListener {
                     if (it.isSuccessful) {
-                        startActivity(Intent(this, MainHomeActivity::class.java))
-                        finish()
+                        val user = auth.currentUser
+                        if (user != null && !user.isEmailVerified) {
+                            Toast.makeText(this, "Email chưa xác thực. Vui lòng kiểm tra hộp thư!", Toast.LENGTH_LONG).show()
+                            auth.signOut()
+                            return@addOnCompleteListener
+                        }
+
+                        val uid = user?.uid ?: return@addOnCompleteListener
+                        db.collection("users").document(uid).get()
+                            .addOnSuccessListener { doc ->
+                                if (doc.exists() && doc.getString("name") != null && doc.getString("name")!!.isNotEmpty()) {
+                                    startActivity(Intent(this, MainHomeActivity::class.java))
+                                } else {
+                                    startActivity(Intent(this, ProfileSetupActivity::class.java))
+                                }
+                                finish()
+                            }
                     } else {
                         Toast.makeText(this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show()
                     }

@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -14,10 +15,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjectChat3">
         <activity
+            android:name=".ui.auth.VerifyEmailActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.home.MainHomeActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.friend.FriendListActivity"
+            android:name=".ui.users.ProfileSetupActivity"
             android:exported="false" />
         <activity
             android:name=".ui.friend.FriendRequestActivity"

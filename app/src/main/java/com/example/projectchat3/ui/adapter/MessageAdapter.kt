@@ -9,15 +9,21 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectchat3.R
 import com.example.projectchat3.data.chats.Message
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class MessageAdapter(
     private val messages: MutableList<Message>,
     private val currentUserId: String,
-    private val onEdit: (Message) -> Unit,
-    private val onDelete: (Message) -> Unit
+    private val firestore: FirebaseFirestore
 ) : RecyclerView.Adapter<MessageAdapter.MessageViewHolder>() {
 
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -36,17 +42,13 @@ class MessageAdapter(
         val isMe = message.senderId == currentUserId
 
         if (message.deleted) {
-            // Tin nhắn đã xóa
             holder.txtMessage.text = "Tin nhắn này đã bị xóa!"
             holder.txtMessage.setTypeface(null, Typeface.ITALIC)
             holder.txtMessage.setTextColor(Color.WHITE)
             holder.txtMessage.setBackgroundResource(R.drawable.bg_message_deleted)
             holder.container.gravity = if (isMe) Gravity.END else Gravity.START
-
-            // Không bật menu
-            holder.itemView.setOnLongClickListener { true }
+            holder.itemView.setOnLongClickListener { true } // khóa menu
         } else {
-            // Tin nhắn bình thường
             holder.txtMessage.text = message.text
             holder.txtMessage.setTypeface(null, Typeface.NORMAL)
 
@@ -60,20 +62,18 @@ class MessageAdapter(
                 holder.container.gravity = Gravity.START
             }
 
-            // Menu sửa / xóa
             holder.itemView.setOnLongClickListener {
                 if (isMe) {
-                    val popup = PopupMenu(holder.itemView.context, holder.txtMessage)
+                    val popup = PopupMenu(holder.txtMessage.context, holder.txtMessage)
                     popup.menuInflater.inflate(R.menu.message_menu, popup.menu)
-
                     popup.setOnMenuItemClickListener {
                         when (it.itemId) {
                             R.id.action_edit -> {
-                                onEdit(message)
+                                showEditDialog(holder, message)
                                 true
                             }
                             R.id.action_delete -> {
-                                onDelete(message) //gọi callback
+                                deleteMessage(message)
                                 true
                             }
                             else -> false
@@ -92,5 +92,57 @@ class MessageAdapter(
         messages.clear()
         messages.addAll(newMessages)
         notifyDataSetChanged()
+    }
+
+    private fun showEditDialog(holder: MessageViewHolder, message: Message) {
+        val context = holder.txtMessage.context
+        val input = android.widget.EditText(context)
+        input.setText(message.text)
+
+        AlertDialog.Builder(context)
+            .setTitle("Sửa tin nhắn")
+            .setView(input)
+            .setPositiveButton("Lưu") { _, _ ->
+                val newText = input.text.toString().trim()
+                if (newText.isNotEmpty()) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            firestore.collection("chats")
+                                .document(message.senderId) // dùng chatId đúng
+                                .collection("messages")
+                                .document(message.id)
+                                .update(
+                                    mapOf(
+                                        "text" to newText,
+                                        "timestamp" to FieldValue.serverTimestamp()
+                                    )
+                                ).await()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
+    }
+
+    private fun deleteMessage(message: Message) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                firestore.collection("chats")
+                    .document(message.senderId) // dùng chatId đúng
+                    .collection("messages")
+                    .document(message.id)
+                    .update(
+                        mapOf(
+                            "deleted" to true,
+                            "timestamp" to FieldValue.serverTimestamp()
+                        )
+                    ).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
