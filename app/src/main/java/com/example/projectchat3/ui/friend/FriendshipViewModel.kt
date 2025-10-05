@@ -1,6 +1,5 @@
 package com.example.projectchat3.ui.friend
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -26,10 +25,11 @@ class FriendshipViewModel(private val repo: FriendshipRepository) : ViewModel() 
     val actionResult: LiveData<Boolean> = _actionResult
 
     /** Gửi lời mời kết bạn */
-    fun sendRequest(currentUid: String, friendUid: String) {
+    fun sendRequest(currentUid: String, friendUid: String, onResult: (Boolean) -> Unit) {
         repo.sendRequest(currentUid, friendUid) { success ->
             _actionResult.postValue(success)
-            if (success) loadSentRequests(currentUid) // reload list sent
+            if (success) loadSentRequests(currentUid)
+            onResult(success)
         }
     }
 
@@ -40,62 +40,54 @@ class FriendshipViewModel(private val repo: FriendshipRepository) : ViewModel() 
 
         viewModelScope.launch {
             try {
-                // Gọi suspend function mới
                 repo.acceptRequest(request.id, currentUid, otherUid)
-
-                // Sau khi thành công, update UI
                 _actionResult.postValue(true)
                 loadFriends(currentUid)
                 loadIncomingRequests(currentUid)
-            } catch (e: Exception) {
-                // Nếu có lỗi, post false và có thể log
+            } catch (_: Exception) {
                 _actionResult.postValue(false)
-                Log.e("FriendshipVM", "Accept request failed: ${e.message}")
             }
         }
     }
-
 
     /** Từ chối lời mời đến */
     fun rejectRequest(request: Friendship) {
         val currentUid = FirebaseAuth.getInstance().uid ?: return
         repo.rejectRequest(request) { success ->
             _actionResult.postValue(success)
-            if (success) {
-                loadIncomingRequests(currentUid)
-            }
+            if (success) loadIncomingRequests(currentUid)
         }
     }
 
     /** Hủy lời mời đã gửi */
     fun cancelRequest(request: Friendship) {
         val currentUid = FirebaseAuth.getInstance().uid ?: return
-        repo.rejectRequest(request) { success ->   // reuse reject trong repo
+        repo.rejectRequest(request) { success ->
             _actionResult.postValue(success)
-            if (success) {
-                loadSentRequests(currentUid)
-            }
+            if (success) loadSentRequests(currentUid)
         }
     }
 
+    /** Lấy danh sách lời mời đến */
     fun loadIncomingRequests(currentUid: String) {
         repo.getIncomingRequests(currentUid) { list ->
             _incomingRequests.postValue(list)
         }
     }
 
+    /** Lấy danh sách lời mời đã gửi */
     fun loadSentRequests(currentUid: String) {
         repo.getSentRequests(currentUid) { list ->
-            _sentRequests.postValue(list)   // 🔥 đổi sang postValue
+            _sentRequests.postValue(list)
         }
     }
 
+    /** Lấy danh sách bạn bè */
     fun loadFriends(currentUid: String) {
         repo.getFriends(currentUid) { list ->
             _friends.postValue(list)
         }
     }
-
 
     /** Helper: lấy uid còn lại trong request */
     private fun getOtherUid(request: Friendship): String {

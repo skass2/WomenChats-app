@@ -11,12 +11,9 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
-
         // Khởi tạo Firebase
         FirebaseApp.initializeApp(this)
-
         val firebaseAppCheck = FirebaseAppCheck.getInstance()
-
         if (BuildConfig.DEBUG) {
             // Dùng DebugAppCheck khi chạy debug
             firebaseAppCheck.installAppCheckProviderFactory(

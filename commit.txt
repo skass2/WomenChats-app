@@ -24,5 +24,13 @@ so7:
 	*Thêm tính năng đặt avatar và tên sau khi xác thực email
 	*Sửa layout profile thêm các btn thay đổi các trường thông tin
 	*Tính năng sửa avatar chưa hoàn thiện, tính năng bạn bè, và layout lời mời đang dính bug không rõ
-	
-	
+so8:
+	*Sửa tính năng gửi lời mời, hiển thị phần thu hồi lời mời kết bạn được gửi đi trước đó
+	*Sử tính năng tìm kiếm: sẽ hiển thị user dựa trên ký tự đã được nhập trên khung tìm kiếm
+	*Thao tác đối với việc kết bạn sẽ thực hiện như sau:
+		- Chọn thanh tìm kiếm
+		- Nhập ký tự
+		- User hiển thị kèm btnAdd
+		- Chọn kết bạn (btnAdd sẽ đổi màu xám + thay đổi txt + ngăn việc thao tác đối với btn)
+		- Hiển thị lời mời trên trang lời mời
+	*Hiển thị danh sách bạn bè 

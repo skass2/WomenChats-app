@@ -25,7 +25,7 @@ class ProfileViewModel : ViewModel() {
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> get() = _error
 
-    // 🔹 Load user hiện tại
+    //  Load user hiện tại
     fun loadUser() {
         _loading.value = true
         repo.getCurrentUser { u ->
@@ -38,7 +38,7 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    // 🔹 Đổi tên hiển thị
+    //  Đổi tên hiển thị
     fun changeUserName(newName: String) {
         if (newName.isBlank()) {
             _error.value = "Tên không được để trống"
@@ -55,7 +55,7 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    // 🔹 Đổi avatar (upload Firebase Storage + Firestore)
+    //  Đổi avatar (upload Firebase Storage + Firestore)
     fun changeAvatar(uri: Uri) {
         _loading.value = true
         repo.updateUserAvatar(uri) { url ->

@@ -1,43 +1,90 @@
 package com.example.projectchat3.data.friends
 
-import android.util.Log
-import com.example.projectchat3.data.chats.ChatUtils
-import com.google.firebase.Timestamp
+import android.os.Handler
+import android.os.Looper
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
 class FriendshipRepository(private val db: FirebaseFirestore) {
 
-    fun sendRequest(currentUid: String, friendUid: String, onResult: (Boolean) -> Unit) {
-        val friendshipId = "${currentUid}_$friendUid"
+    fun sendRequest(currentUid: String, friendUid: String, onComplete: (Boolean) -> Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            onComplete(false)
+            return
+        }
 
-        val friendship = Friendship(
-            id = friendshipId,
-            participants = listOf(currentUid, friendUid),
-            status = "pending",
-            requestBy = currentUid,
-            createdAt = Timestamp.now(),
-            updatedAt = Timestamp.now()
-        )
+        var called = false
+        val handler = Handler(Looper.getMainLooper())
 
-        db.collection("friendships")
-            .document(friendship.id)
-            .set(friendship)
-            .addOnSuccessListener {
-                Log.d("FriendRepo", "✅ sendRequest success: $friendshipId")
-                onResult(true)
+        handler.postDelayed({
+            if (!called) {
+                called = true
+                proceedWithToken(user, currentUid, friendUid, onComplete)
             }
-            .addOnFailureListener { e ->
-                Log.e("FriendRepo", "❌ sendRequest failed: ${e.message}")
-                onResult(false)
+        }, 5000)
+
+        user.reload()
+            .addOnCompleteListener { reloadTask ->
+                if (called) return@addOnCompleteListener
+                called = true
+                if (!reloadTask.isSuccessful) {
+                    onComplete(false)
+                    return@addOnCompleteListener
+                }
+                proceedWithToken(user, currentUid, friendUid, onComplete)
+            }
+            .addOnFailureListener {
+                if (!called) {
+                    called = true
+                    onComplete(false)
+                }
             }
     }
-    private val firestore = FirebaseFirestore.getInstance()
-    suspend fun acceptRequest(fid: String, currentUid: String, otherUid: String) {
 
+    private fun proceedWithToken(
+        user: FirebaseUser,
+        currentUid: String,
+        friendUid: String,
+        onComplete: (Boolean) -> Unit
+    ) {
+        user.getIdToken(true)
+            .addOnSuccessListener { result ->
+                val emailVerified = result.claims["email_verified"] as? Boolean ?: false
+                if (!emailVerified) {
+                    onComplete(false)
+                    return@addOnSuccessListener
+                }
+
+                val ids = listOf(currentUid, friendUid).sorted()
+                val docId = "${ids[0]}_${ids[1]}"
+
+                val friendship = hashMapOf(
+                    "participants" to listOf(currentUid, friendUid),
+                    "requestBy" to currentUid,
+                    "status" to "pending",
+                    "createdAt" to FieldValue.serverTimestamp(),
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+
+                FirebaseFirestore.getInstance()
+                    .collection("friendships")
+                    .document(docId)
+                    .set(friendship)
+                    .addOnSuccessListener { onComplete(true) }
+                    .addOnFailureListener { onComplete(false) }
+            }
+            .addOnFailureListener { onComplete(false) }
+    }
+
+    private val firestore = FirebaseFirestore.getInstance()
+
+    suspend fun acceptRequest(fid: String, currentUid: String, otherUid: String) {
         val friendshipRef = firestore.collection("friendships").document(fid)
-        // 1. Update friendship trước
+
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(friendshipRef)
             if (snapshot.getString("status") == "pending") {
@@ -47,7 +94,6 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
             }
         }.await()
 
-        // 2. Sau khi update thành công → tạo chat
         val participants = listOf(currentUid, otherUid)
         val chatId = firestore.collection("chats").document().id
         val chat = mapOf(
@@ -57,20 +103,12 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
         firestore.collection("chats").document(chatId).set(chat).await()
     }
 
-
-
     fun rejectRequest(request: Friendship, onResult: (Boolean) -> Unit) {
         db.collection("friendships")
             .document(request.id)
             .delete()
-            .addOnSuccessListener {
-                Log.d("FriendRepo", "✅ rejectRequest success: ${request.id}")
-                onResult(true)
-            }
-            .addOnFailureListener { e ->
-                Log.e("FriendRepo", "❌ rejectRequest failed: ${e.message}")
-                onResult(false)
-            }
+            .addOnSuccessListener { onResult(true) }
+            .addOnFailureListener { onResult(false) }
     }
 
     fun getIncomingRequests(currentUid: String, onResult: (List<Friendship>) -> Unit) {
@@ -82,16 +120,9 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
                 val list = result.map { doc ->
                     doc.toObject(Friendship::class.java).copy(id = doc.id)
                 }.filter { it.requestBy != currentUid }
-
-                Log.d("FriendRepo", "📥 Incoming requests for $currentUid = ${list.size}")
-                list.forEach { Log.d("FriendRepo", "↪️ $it") }
-
                 onResult(list)
             }
-            .addOnFailureListener { e ->
-                Log.e("FriendRepo", "❌ getIncomingRequests failed: ${e.message}")
-                onResult(emptyList())
-            }
+            .addOnFailureListener { onResult(emptyList()) }
     }
 
     fun getFriends(currentUid: String, onResult: (List<Friendship>) -> Unit) {
@@ -103,37 +134,22 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
                 val list = result.map { doc ->
                     doc.toObject(Friendship::class.java).copy(id = doc.id)
                 }
-
-                Log.d("FriendRepo", "👫 Friends of $currentUid = ${list.size}")
-                list.forEach { Log.d("FriendRepo", "↪️ $it") }
-
                 onResult(list)
             }
-            .addOnFailureListener { e ->
-                Log.e("FriendRepo", "❌ getFriends failed: ${e.message}")
-                onResult(emptyList())
-            }
+            .addOnFailureListener { onResult(emptyList()) }
     }
 
     fun getSentRequests(currentUid: String, onResult: (List<Friendship>) -> Unit) {
         db.collection("friendships")
-            .whereArrayContains("participants", currentUid) // 🔑 đổi chỗ này
+            .whereArrayContains("participants", currentUid)
             .whereEqualTo("status", "pending")
             .get()
             .addOnSuccessListener { result ->
                 val list = result.map { doc ->
                     doc.toObject(Friendship::class.java).copy(id = doc.id)
-                }.filter { it.requestBy == currentUid } // 🔑 lọc ở client
-
-                Log.d("FriendRepo", "📤 Sent requests by $currentUid = ${list.size}")
-                list.forEach { Log.d("FriendRepo", "↪️ $it") }
-
+                }.filter { it.requestBy == currentUid }
                 onResult(list)
             }
-            .addOnFailureListener { e ->
-                Log.e("FriendRepo", "❌ getSentRequests failed: ${e.message}")
-                onResult(emptyList())
-            }
+            .addOnFailureListener { onResult(emptyList()) }
     }
 }
-

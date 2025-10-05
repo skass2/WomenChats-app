@@ -27,11 +27,25 @@ class UserRepository(
     }
 
     fun loadUsers(onResult: (List<User>) -> Unit) {
-        db.collection("users").get()
-            .addOnSuccessListener { result ->
-                val users = result.mapNotNull { it.toObject(User::class.java) }
-                    .filter { it.uid != auth.uid }
-                onResult(users)
+        val currentUid = auth.uid ?: return onResult(emptyList())
+
+        // Lấy tất cả friendship liên quan đến current user
+        db.collection("friendships")
+            .whereArrayContains("participants", currentUid)
+            .get()
+            .addOnSuccessListener { friendshipSnap ->
+                val relatedUids = friendshipSnap.documents.flatMap { doc ->
+                    (doc["participants"] as? List<String>).orEmpty()
+                }.toSet()
+
+                // Sau khi có danh sách liên quan, lấy toàn bộ users
+                db.collection("users").get()
+                    .addOnSuccessListener { result ->
+                        val users = result.mapNotNull { it.toObject(User::class.java) }
+                            .filter { it.uid != currentUid && it.uid !in relatedUids }
+                        onResult(users)
+                    }
+                    .addOnFailureListener { onResult(emptyList()) }
             }
             .addOnFailureListener { onResult(emptyList()) }
     }
@@ -57,7 +71,7 @@ class UserRepository(
             .addOnFailureListener { onResult(null) }
     }
 
-    // ✅ Cập nhật tên hiển thị
+    // Cập nhật tên hiển thị
     fun updateUserName(newName: String, onResult: (Boolean) -> Unit) {
         val uid = auth.uid ?: return onResult(false)
         db.collection("users").document(uid)
@@ -66,7 +80,7 @@ class UserRepository(
             .addOnFailureListener { onResult(false) }
     }
 
-    // ✅ Upload avatar và cập nhật Firestore
+    // Upload avatar và cập nhật Firestore
     fun updateUserAvatar(uri: Uri, onResult: (String?) -> Unit) {
         val uid = auth.uid ?: return onResult(null)
         val fileRef = storage.reference.child("avatars/$uid-${UUID.randomUUID()}.jpg")

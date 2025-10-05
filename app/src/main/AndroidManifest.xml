@@ -25,7 +25,7 @@
             android:exported="false" />
         <activity
             android:name=".ui.friend.FriendRequestActivity"
-            android:exported="false" />
+            android:exported="false"/>
         <activity
             android:name=".ui.auth.RegisterActivity"
             android:exported="false" />

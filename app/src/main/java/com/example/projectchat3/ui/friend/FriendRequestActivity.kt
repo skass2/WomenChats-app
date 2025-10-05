@@ -1,4 +1,4 @@
-package com.example.projectchat3.ui.friends
+package com.example.projectchat3.ui.friend
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -6,6 +6,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectchat3.R
 import com.example.projectchat3.data.users.User
+import com.example.projectchat3.ui.friends.FriendRequestAdapter
+import com.example.projectchat3.ui.friends.RequestType
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -23,9 +25,10 @@ class FriendRequestActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         adapter = FriendRequestAdapter(
+            type = RequestType.RECEIVED,
             requests = emptyList(),
             onAccept = { user -> acceptRequest(user) },
-            onDecline = { user -> declineRequest(user) }
+            onReject = { user -> declineRequest(user) }
         )
         recyclerView.adapter = adapter
 
@@ -36,8 +39,13 @@ class FriendRequestActivity : AppCompatActivity() {
         db.collection("friend_requests")
             .whereEqualTo("to", currentUid)
             .addSnapshotListener { snapshot, _ ->
+                if (snapshot == null || snapshot.isEmpty) {
+                    adapter.updateList(emptyList())
+                    return@addSnapshotListener
+                }
+
                 val users = mutableListOf<User>()
-                snapshot?.documents?.forEach { doc ->
+                snapshot.documents.forEach { doc ->
                     val uid = doc.getString("from")
                     if (uid != null) {
                         db.collection("users").document(uid).get()
@@ -62,9 +70,8 @@ class FriendRequestActivity : AppCompatActivity() {
             .collection("friends").document(currentUid)
 
         batch.set(currentUserRef, user)
-        batch.set(friendUserRef, mapOf("uid" to currentUid)) // chỉ lưu uid của mình
+        batch.set(friendUserRef, mapOf("uid" to currentUid))
 
-        // xóa request
         val query = db.collection("friend_requests")
             .whereEqualTo("from", user.uid)
             .whereEqualTo("to", currentUid)

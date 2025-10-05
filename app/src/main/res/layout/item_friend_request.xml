@@ -47,18 +47,16 @@
             android:layout_margin="5dp"
             android:backgroundTint="#FFFFFF"
             android:textColor="@color/black"
-            app:layout_constraintEnd_toStartOf="@id/btnDecline"
+            app:layout_constraintEnd_toStartOf="@id/btnReject"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
         <Button
-            android:id="@+id/btnDecline"
+            android:id="@+id/btnReject"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:text="Reject"
-            android:layout_margin="5dp"
-            android:backgroundTint="#FFFFFF"
-            android:textColor="@color/black"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
