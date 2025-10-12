@@ -6,10 +6,11 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.projectchat3.databinding.ActivityProfileSetupBinding
-import com.example.projectchat3.ui.home.MainHomeActivity
+import com.example.projectchat3.ui.MainHomeActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
 class ProfileSetupActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileSetupBinding
@@ -51,7 +52,7 @@ class ProfileSetupActivity : AppCompatActivity() {
 
             // Nếu có chọn ảnh thì upload trước
             if (imageUri != null) {
-                val ref = storage.reference.child("avatars/$uid")
+                val ref = storage.reference.child("avatars/$uid/${UUID.randomUUID()}.jpg")
                 ref.putFile(imageUri!!)
                     .addOnSuccessListener {
                         ref.downloadUrl.addOnSuccessListener { url ->

@@ -2,6 +2,7 @@ package com.example.projectchat3.data.friends
 
 import android.os.Handler
 import android.os.Looper
+import com.example.projectchat3.data.chats.Chat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
@@ -96,11 +97,13 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
 
         val participants = listOf(currentUid, otherUid)
         val chatId = firestore.collection("chats").document().id
-        val chat = mapOf(
-            "participants" to participants,
-            "createdAt" to FieldValue.serverTimestamp()
+
+        val chatObject = Chat(
+            cid = chatId,
+            participants = participants,
+            // Các trường khác có thể để giá trị mặc định
         )
-        firestore.collection("chats").document(chatId).set(chat).await()
+        firestore.collection("chats").document(chatId).set(chatObject).await()
     }
 
     fun rejectRequest(request: Friendship, onResult: (Boolean) -> Unit) {

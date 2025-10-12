@@ -74,9 +74,10 @@ class ChatActivity : AppCompatActivity() {
         adapter = MessageAdapter(
             messages = mutableListOf(),
             currentUserId = currentUserId,
-            firestore = FirebaseFirestore.getInstance()
+            // Truyền 2 hàm xử lý vào adapter
+            onEditMessage = { message -> showEditDialog(message) },
+            onDeleteMessage = { message -> showDeleteDialog(message) }
         )
-
         recyclerView.adapter = adapter
 
         val edtMessage = findViewById<EditText>(R.id.edtMessage)
@@ -114,7 +115,6 @@ class ChatActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun showEditDialog(message: Message) {
         val input = EditText(this)
         input.setText(message.text)
@@ -124,29 +124,20 @@ class ChatActivity : AppCompatActivity() {
             .setPositiveButton("Lưu") { _, _ ->
                 val newText = input.text.toString().trim()
                 if (newText.isNotEmpty()) {
-                    val participants = listOf(currentUserId, chatUserId)
-                    viewModel.getOrCreateChat(participants) { chatId ->
-                        if (chatId != null) {
-                            viewModel.updateMessage(chatId, message.id, newText)
-                        }
-                    }
+                    // Ra lệnh cho ViewModel, không tự ý gọi Firestore
+                    viewModel.updateMessage(chatId, message.id, newText)
                 }
             }
             .setNegativeButton("Hủy", null)
             .show()
     }
-
     private fun showDeleteDialog(message: Message) {
         AlertDialog.Builder(this)
             .setTitle("Xóa tin nhắn")
             .setMessage("Bạn có chắc muốn xóa tin nhắn này?")
             .setPositiveButton("Xóa") { _, _ ->
-                val participants = listOf(currentUserId, chatUserId)
-                viewModel.getOrCreateChat(participants) { chatId ->
-                    if (chatId != null) {
-                        viewModel.deleteMessage(chatId, message.id)
-                    }
-                }
+                // Ra lệnh cho ViewModel
+                viewModel.deleteMessage(chatId, message.id)
             }
             .setNegativeButton("Hủy", null)
             .show()

@@ -1,6 +1,5 @@
 package com.example.projectchat3.ui.auth
 
-import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.MotionEvent
@@ -68,9 +67,17 @@ class RegisterActivity : AppCompatActivity() {
                 binding.txtConfirmError.visibility = View.VISIBLE
                 return@setOnClickListener
             }
-
+            // Hiển thị ProgressBar và vô hiệu hóa nút bấm
+            binding.progressBarRegister.visibility = View.VISIBLE
+            binding.btnRegister.isEnabled = false
+            binding.btnBackToLogin.isEnabled = false
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
+                    // Khi hoàn tất, ẩn ProgressBar và bật lại nút
+                    binding.progressBarRegister.visibility = View.GONE
+                    binding.btnRegister.isEnabled = true
+                    binding.btnBackToLogin.isEnabled = true
+
                     if (task.isSuccessful) {
                         auth.currentUser?.sendEmailVerification()
                             ?.addOnSuccessListener {

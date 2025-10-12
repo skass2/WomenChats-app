@@ -20,12 +20,16 @@ class ChatRepository(private val db: FirebaseFirestore) {
                 } else {
                     // ❌ Chưa có -> tạo mới
                     val newChatRef = db.collection("chats").document()
-                    val newChat = mapOf(
-                        "participants" to participants,
-                        "lastMessage" to "",
-                        "updatedAt" to System.currentTimeMillis()
+
+                    // Thay thế mapOf bằng việc tạo đối tượng Chat
+                    val newChatObject = Chat(
+                        cid = newChatRef.id,
+                        participants = participants,
+                        lastMessage = "",
+                        updatedAt = System.currentTimeMillis()
                     )
-                    newChatRef.set(newChat)
+
+                    newChatRef.set(newChatObject)
                         .addOnSuccessListener { onResult(newChatRef.id) }
                         .addOnFailureListener { onResult(null) }
                 }

@@ -23,7 +23,8 @@ import kotlinx.coroutines.tasks.await
 class MessageAdapter(
     private val messages: MutableList<Message>,
     private val currentUserId: String,
-    private val firestore: FirebaseFirestore
+    private val onEditMessage: (Message) -> Unit,
+    private val onDeleteMessage: (Message) -> Unit
 ) : RecyclerView.Adapter<MessageAdapter.MessageViewHolder>() {
 
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -63,17 +64,17 @@ class MessageAdapter(
             }
 
             holder.itemView.setOnLongClickListener {
-                if (isMe) {
+                if (isMe && !message.deleted) { // Chỉ cho phép với tin nhắn của mình và chưa bị xóa
                     val popup = PopupMenu(holder.txtMessage.context, holder.txtMessage)
                     popup.menuInflater.inflate(R.menu.message_menu, popup.menu)
                     popup.setOnMenuItemClickListener {
                         when (it.itemId) {
                             R.id.action_edit -> {
-                                showEditDialog(holder, message)
+                                onEditMessage(message) // <-- GỌI HÀM LAMBDA
                                 true
                             }
                             R.id.action_delete -> {
-                                deleteMessage(message)
+                                onDeleteMessage(message) // <-- GỌI HÀM LAMBDA
                                 true
                             }
                             else -> false
@@ -92,57 +93,5 @@ class MessageAdapter(
         messages.clear()
         messages.addAll(newMessages)
         notifyDataSetChanged()
-    }
-
-    private fun showEditDialog(holder: MessageViewHolder, message: Message) {
-        val context = holder.txtMessage.context
-        val input = android.widget.EditText(context)
-        input.setText(message.text)
-
-        AlertDialog.Builder(context)
-            .setTitle("Sửa tin nhắn")
-            .setView(input)
-            .setPositiveButton("Lưu") { _, _ ->
-                val newText = input.text.toString().trim()
-                if (newText.isNotEmpty()) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            firestore.collection("chats")
-                                .document(message.senderId) // dùng chatId đúng
-                                .collection("messages")
-                                .document(message.id)
-                                .update(
-                                    mapOf(
-                                        "text" to newText,
-                                        "timestamp" to FieldValue.serverTimestamp()
-                                    )
-                                ).await()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-            }
-            .setNegativeButton("Hủy", null)
-            .show()
-    }
-
-    private fun deleteMessage(message: Message) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                firestore.collection("chats")
-                    .document(message.senderId) // dùng chatId đúng
-                    .collection("messages")
-                    .document(message.id)
-                    .update(
-                        mapOf(
-                            "deleted" to true,
-                            "timestamp" to FieldValue.serverTimestamp()
-                        )
-                    ).await()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
     }
 }

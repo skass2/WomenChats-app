@@ -1,6 +1,12 @@
 package com.example.projectchat3
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.media.AudioAttributes
+import android.net.Uri
+import android.os.Build
 import android.util.Log
 import com.google.firebase.BuildConfig
 import com.google.firebase.FirebaseApp
@@ -11,21 +17,46 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        // Khởi tạo Firebase
         FirebaseApp.initializeApp(this)
         val firebaseAppCheck = FirebaseAppCheck.getInstance()
+
         if (BuildConfig.DEBUG) {
-            // Dùng DebugAppCheck khi chạy debug
             firebaseAppCheck.installAppCheckProviderFactory(
                 DebugAppCheckProviderFactory.getInstance()
             )
             Log.d("MyApp", "AppCheck Debug provider enabled")
         } else {
-            // Production thì dùng Play Integrity
             firebaseAppCheck.installAppCheckProviderFactory(
                 PlayIntegrityAppCheckProviderFactory.getInstance()
             )
             Log.d("MyApp", "AppCheck Play Integrity enabled")
+        }
+
+        // --- GỌI HÀM TẠO KÊNH ---
+        createNotificationChannel()
+    }
+
+    private fun createNotificationChannel() {
+        // Chỉ cần tạo channel trên Android 8.0 (API 26) trở lên
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "new_message_channel"
+            val channelName = "Tin nhắn mới"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+
+            val channel = NotificationChannel(channelId, channelName, importance)
+
+            // --- ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT ĐỂ CÓ TIẾNG ---
+            val soundUri = Uri.parse("android.resource://$packageName/${R.raw.www}")
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+            channel.setSound(soundUri, audioAttributes)
+            // --- KẾT THÚC PHẦN ÂM THANH ---
+
+            // Đăng ký channel với hệ thống
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 }

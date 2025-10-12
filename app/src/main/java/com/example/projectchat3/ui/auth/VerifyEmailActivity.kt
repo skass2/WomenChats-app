@@ -6,7 +6,7 @@ import android.os.CountDownTimer
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.projectchat3.databinding.ActivityVerifyEmailBinding
-import com.example.projectchat3.ui.home.MainHomeActivity
+import com.example.projectchat3.ui.MainHomeActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class VerifyEmailActivity : AppCompatActivity() {

@@ -48,31 +48,30 @@ class FriendListFragment : Fragment() {
         db.collection("friendships")
             .whereArrayContains("participants", currentUid)
             .whereEqualTo("status", "accepted")
-            .addSnapshotListener { snapshot, _ ->
-                val friendUids = snapshot?.documents
-                    ?.mapNotNull { doc ->
-                        val participants = doc.get("participants") as? List<*>
-                        participants?.firstOrNull { it != currentUid } as? String
-                    } ?: emptyList()
+            .get()
+            .addOnSuccessListener { friendshipSnapshot ->
+                if (friendshipSnapshot == null || friendshipSnapshot.isEmpty) {
+                    adapter.updateList(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                // Lấy hết ID của bạn bè
+                val friendUids = friendshipSnapshot.documents.mapNotNull { doc ->
+                    val participants = doc.get("participants") as? List<*>
+                    participants?.firstOrNull { it != currentUid } as? String
+                }
 
                 if (friendUids.isEmpty()) {
                     adapter.updateList(emptyList())
-                    return@addSnapshotListener
+                    return@addOnSuccessListener
                 }
 
-                // 2. Lấy thông tin user từ collection users
+                // Lấy thông tin user trong 1 truy vấn duy nhất
                 db.collection("users")
                     .whereIn("uid", friendUids)
                     .get()
-                    .addOnSuccessListener { result ->
-                        val friends = result.mapNotNull { doc ->
-                            val uid = doc.getString("uid")
-                            val name = doc.getString("name")
-                            val avatar = doc.getString("avatarUrl")
-                            if (uid != null && name != null)
-                                User(uid = uid, name = name, avatarUrl = avatar ?: "")
-                            else null
-                        }
+                    .addOnSuccessListener { userResult ->
+                        val friends = userResult.toObjects(User::class.java)
                         adapter.updateList(friends)
                     }
             }

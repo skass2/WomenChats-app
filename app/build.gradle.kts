@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
+    implementation("com.google.firebase:firebase-messaging")
+
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -34,3 +34,13 @@ so8:
 		- Chọn kết bạn (btnAdd sẽ đổi màu xám + thay đổi txt + ngăn việc thao tác đối với btn)
 		- Hiển thị lời mời trên trang lời mời
 	*Hiển thị danh sách bạn bè 
+so9:
+	*Chỉnh sửa code phần chat chuẩn theo mvvm
+	*Chỉnh sửa rules	
+		// Cho phép user tạo bất kỳ tệp nào bên trong thư mục mang tên UID của họ
+		match /avatars/{userId}/{fileName} {
+		  allow read: if true;
+		  allow write: if request.auth != null && request.auth.uid == userId;
+		}
+	*Tối ưu lại tốc độ request đối với friendlist
+	*Tạo thông báo đẩy (tạm ổn có thể sẽ sưa thêm)
