@@ -6,19 +6,16 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.projectchat3.R
 import com.example.projectchat3.data.chats.Message
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class MessageAdapter(
     private val messages: MutableList<Message>,
@@ -29,7 +26,9 @@ class MessageAdapter(
 
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtMessage: TextView = view.findViewById(R.id.txtMessage)
+        val imgMessage: ImageView = view.findViewById(R.id.imgMessage)
         val container: LinearLayout = view.findViewById(R.id.messageContainer)
+        val bubble: FrameLayout = view.findViewById(R.id.bubble)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
@@ -42,48 +41,80 @@ class MessageAdapter(
         val message = messages[position]
         val isMe = message.senderId == currentUserId
 
-        if (message.deleted) {
-            holder.txtMessage.text = "Tin nhắn này đã bị xóa!"
-            holder.txtMessage.setTypeface(null, Typeface.ITALIC)
+        val density = holder.itemView.context.resources.displayMetrics.density
+        val padText = (8 * density).toInt()
+        val padImage = (2 * density).toInt()
+
+        when {
+            message.deleted -> {
+                // --- Tin nhắn đã bị thu hồi ---
+                holder.imgMessage.visibility = View.GONE
+                holder.txtMessage.visibility = View.VISIBLE
+                holder.txtMessage.text = "Tin nhắn này đã bị thu hồi"
+                holder.txtMessage.setTypeface(null, Typeface.ITALIC)
+                holder.txtMessage.setTextColor(Color.GRAY)
+                holder.bubble.setPadding(padText, padText, padText, padText)
+            }
+
+            !message.imageUrl.isNullOrEmpty() -> {
+                // --- Tin nhắn là ảnh ---
+                holder.txtMessage.visibility = View.GONE
+                holder.imgMessage.visibility = View.VISIBLE
+
+                Glide.with(holder.itemView.context)
+                    .load(message.imageUrl)
+                    .placeholder(R.drawable.ic_image_placeholder)
+                    .centerCrop()
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .into(holder.imgMessage)
+
+                holder.bubble.setPadding(padImage, padImage, padImage, padImage)
+            }
+
+            else -> {
+                // --- Tin nhắn là text ---
+                holder.imgMessage.visibility = View.GONE
+                holder.txtMessage.visibility = View.VISIBLE
+                holder.txtMessage.text = message.text
+                holder.txtMessage.setTypeface(null, Typeface.NORMAL)
+                holder.bubble.setPadding(padText, padText, padText, padText)
+            }
+        }
+
+        // --- Style bong bóng (phải / trái) ---
+        if (isMe) {
+            holder.bubble.setBackgroundResource(R.drawable.bg_message_right)
             holder.txtMessage.setTextColor(Color.WHITE)
-            holder.txtMessage.setBackgroundResource(R.drawable.bg_message_deleted)
-            holder.container.gravity = if (isMe) Gravity.END else Gravity.START
-            holder.itemView.setOnLongClickListener { true } // khóa menu
+            holder.container.gravity = Gravity.END
         } else {
-            holder.txtMessage.text = message.text
-            holder.txtMessage.setTypeface(null, Typeface.NORMAL)
+            holder.bubble.setBackgroundResource(R.drawable.bg_message_left)
+            holder.txtMessage.setTextColor(Color.BLACK)
+            holder.container.gravity = Gravity.START
+        }
 
-            if (isMe) {
-                holder.txtMessage.setBackgroundResource(R.drawable.bg_message_right)
-                holder.txtMessage.setTextColor(Color.WHITE)
-                holder.container.gravity = Gravity.END
-            } else {
-                holder.txtMessage.setBackgroundResource(R.drawable.bg_message_left)
-                holder.txtMessage.setTextColor(Color.BLACK)
-                holder.container.gravity = Gravity.START
-            }
-
-            holder.itemView.setOnLongClickListener {
-                if (isMe && !message.deleted) { // Chỉ cho phép với tin nhắn của mình và chưa bị xóa
-                    val popup = PopupMenu(holder.txtMessage.context, holder.txtMessage)
-                    popup.menuInflater.inflate(R.menu.message_menu, popup.menu)
-                    popup.setOnMenuItemClickListener {
-                        when (it.itemId) {
-                            R.id.action_edit -> {
-                                onEditMessage(message) // <-- GỌI HÀM LAMBDA
-                                true
-                            }
-                            R.id.action_delete -> {
-                                onDeleteMessage(message) // <-- GỌI HÀM LAMBDA
-                                true
-                            }
-                            else -> false
+        // --- Menu sửa / xóa ---
+        holder.itemView.setOnLongClickListener {
+            if (isMe && !message.deleted) {
+                val popup = PopupMenu(holder.txtMessage.context, holder.txtMessage)
+                popup.menuInflater.inflate(R.menu.message_menu, popup.menu)
+                popup.setOnMenuItemClickListener {
+                    when (it.itemId) {
+                        R.id.action_edit -> {
+                            onEditMessage(message)
+                            true
                         }
+
+                        R.id.action_delete -> {
+                            onDeleteMessage(message)
+                            true
+                        }
+
+                        else -> false
                     }
-                    popup.show()
                 }
-                true
+                popup.show()
             }
+            true
         }
     }
 

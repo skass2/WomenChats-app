@@ -25,12 +25,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Nhập tên hiển thị"
+        android:inputType="textPersonName"
         android:layout_marginTop="16dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBarSetup"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Lưu"
-        android:layout_marginTop="24dp" />
+        android:layout_marginTop="8dp" />
 </LinearLayout>

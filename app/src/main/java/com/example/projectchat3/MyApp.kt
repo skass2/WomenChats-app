@@ -19,7 +19,11 @@ class MyApp : Application() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
         val firebaseAppCheck = FirebaseAppCheck.getInstance()
-
+        firebaseAppCheck.installAppCheckProviderFactory(
+            DebugAppCheckProviderFactory.getInstance()
+        )
+        Log.d("MyApp", "AppCheck is FORCED to use Debug provider")
+        /*
         if (BuildConfig.DEBUG) {
             firebaseAppCheck.installAppCheckProviderFactory(
                 DebugAppCheckProviderFactory.getInstance()
@@ -31,7 +35,7 @@ class MyApp : Application() {
             )
             Log.d("MyApp", "AppCheck Play Integrity enabled")
         }
-
+        */
         // --- GỌI HÀM TẠO KÊNH ---
         createNotificationChannel()
     }

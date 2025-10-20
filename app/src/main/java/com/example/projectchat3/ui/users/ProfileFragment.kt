@@ -1,17 +1,15 @@
 package com.example.projectchat3.ui.users
 
-import android.app.Activity
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.view.*
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.bumptech.glide.Glide
@@ -22,7 +20,6 @@ import com.google.firebase.auth.FirebaseAuth
 class ProfileFragment : Fragment() {
 
     private val viewModel: ProfileViewModel by viewModels()
-
     private lateinit var imgAvatar: ImageView
     private lateinit var tvName: TextView
     private lateinit var tvEmail: TextView
@@ -30,7 +27,21 @@ class ProfileFragment : Fragment() {
     private lateinit var btnLogout: Button
     private lateinit var progressBar: ProgressBar
 
-    private val PICK_IMAGE_REQUEST = 1001
+    // --- Permission & Image Picker ---
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                imagePickerLauncher.launch("image/*")
+            } else {
+                Toast.makeText(requireContext(), "Bạn cần cấp quyền để đổi ảnh.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private val imagePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let { viewModel.changeAvatar(it) }
+        }
+    // --- End ---
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -46,8 +57,6 @@ class ProfileFragment : Fragment() {
 
         setupObservers()
         setupActions()
-
-        // load user ngay khi vào
         viewModel.loadUser()
 
         return view
@@ -71,31 +80,31 @@ class ProfileFragment : Fragment() {
         }
 
         viewModel.error.observe(viewLifecycleOwner) { msg ->
-            msg?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
-            }
+            msg?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show() }
         }
     }
 
     private fun setupActions() {
-        btnChangeAvatar.setOnClickListener {
-            val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-            startActivityForResult(intent, PICK_IMAGE_REQUEST)
-        }
+        btnChangeAvatar.setOnClickListener { checkPermissionAndPickImage() }
 
         btnLogout.setOnClickListener {
             FirebaseAuth.getInstance().signOut()
             startActivity(Intent(requireContext(), MainActivity::class.java))
-            activity?.finish()
+            activity?.finishAffinity()
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK) {
-            data?.data?.let { uri ->
-                viewModel.changeAvatar(uri)
-            }
+    private fun checkPermissionAndPickImage() {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_IMAGES
+        else
+            Manifest.permission.READ_EXTERNAL_STORAGE
+
+        when {
+            ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED ->
+                imagePickerLauncher.launch("image/*")
+            else ->
+                requestPermissionLauncher.launch(permission)
         }
     }
 }

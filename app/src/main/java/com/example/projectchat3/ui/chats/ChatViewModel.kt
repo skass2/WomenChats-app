@@ -1,6 +1,7 @@
 package com.example.projectchat3.ui.chat
 
 import android.app.Application
+import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -61,6 +62,20 @@ class ChatViewModel(private val repo: ChatRepository, private val app: Applicati
         repo.deleteMessage(roomId, messageId) { success ->
             if (!success) {
                 Toast.makeText(app, "❌ Xóa tin nhắn thất bại!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    fun sendImageMessage(imageUri: Uri, participants: List<String>) {
+        val senderId = com.google.firebase.auth.FirebaseAuth.getInstance().uid ?: return
+        repo.getOrCreateChat(participants) { chatId ->
+            if (chatId != null) {
+                repo.sendImageMessage(chatId, imageUri, senderId, participants) { success ->
+                    if (!success) {
+                        Toast.makeText(app, "❌ Gửi ảnh thất bại!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                Toast.makeText(app, "❌ Không thể tạo phòng chat!", Toast.LENGTH_SHORT).show()
             }
         }
     }

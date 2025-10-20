@@ -1,10 +1,6 @@
 package com.example.projectchat3.data.friends
 
-import android.os.Handler
-import android.os.Looper
-import com.example.projectchat3.data.chats.Chat
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
+import android.util.Log
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -12,81 +8,34 @@ import kotlinx.coroutines.tasks.await
 class FriendshipRepository(private val db: FirebaseFirestore) {
 
     fun sendRequest(currentUid: String, friendUid: String, onComplete: (Boolean) -> Unit) {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            onComplete(false)
-            return
-        }
+        val ids = listOf(currentUid, friendUid).sorted()
+        val docId = "${ids[0]}_${ids[1]}"
 
-        var called = false
-        val handler = Handler(Looper.getMainLooper())
+        val friendshipData = hashMapOf(
+            "participants" to listOf(currentUid, friendUid),
+            "requestBy" to currentUid,
+            "status" to "pending",
+            "createdAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
 
-        handler.postDelayed({
-            if (!called) {
-                called = true
-                proceedWithToken(user, currentUid, friendUid, onComplete)
+        db.collection("friendships").document(docId)
+            .set(friendshipData)
+            .addOnSuccessListener {
+                Log.d("FriendRepo", "✅ Gửi lời mời thành công, docId: $docId")
+                onComplete(true)
             }
-        }, 5000)
-
-        user.reload()
-            .addOnCompleteListener { reloadTask ->
-                if (called) return@addOnCompleteListener
-                called = true
-                if (!reloadTask.isSuccessful) {
-                    onComplete(false)
-                    return@addOnCompleteListener
-                }
-                proceedWithToken(user, currentUid, friendUid, onComplete)
-            }
-            .addOnFailureListener {
-                if (!called) {
-                    called = true
-                    onComplete(false)
-                }
+            .addOnFailureListener { e ->
+                Log.e("FriendRepo", "❌ Gửi lời mời thất bại: ${e.message}")
+                onComplete(false)
             }
     }
 
-    private fun proceedWithToken(
-        user: FirebaseUser,
-        currentUid: String,
-        friendUid: String,
-        onComplete: (Boolean) -> Unit
-    ) {
-        user.getIdToken(true)
-            .addOnSuccessListener { result ->
-                val emailVerified = result.claims["email_verified"] as? Boolean ?: false
-                if (!emailVerified) {
-                    onComplete(false)
-                    return@addOnSuccessListener
-                }
-
-                val ids = listOf(currentUid, friendUid).sorted()
-                val docId = "${ids[0]}_${ids[1]}"
-
-                val friendship = hashMapOf(
-                    "participants" to listOf(currentUid, friendUid),
-                    "requestBy" to currentUid,
-                    "status" to "pending",
-                    "createdAt" to FieldValue.serverTimestamp(),
-                    "updatedAt" to FieldValue.serverTimestamp()
-                )
-
-                FirebaseFirestore.getInstance()
-                    .collection("friendships")
-                    .document(docId)
-                    .set(friendship)
-                    .addOnSuccessListener { onComplete(true) }
-                    .addOnFailureListener { onComplete(false) }
-            }
-            .addOnFailureListener { onComplete(false) }
-    }
-
-    private val firestore = FirebaseFirestore.getInstance()
-
+    // --- HÀM QUAN TRỌNG CẦN SỬA LÀ HÀM NÀY ---
     suspend fun acceptRequest(fid: String, currentUid: String, otherUid: String) {
-        val friendshipRef = firestore.collection("friendships").document(fid)
+        val friendshipRef = db.collection("friendships").document(fid)
 
-        firestore.runTransaction { transaction ->
+        db.runTransaction { transaction ->
             val snapshot = transaction.get(friendshipRef)
             if (snapshot.getString("status") == "pending") {
                 transaction.update(friendshipRef, "status", "accepted")
@@ -95,15 +44,24 @@ class FriendshipRepository(private val db: FirebaseFirestore) {
             }
         }.await()
 
+        // --- BẮT ĐẦU LOGIC TẠO CHAT ID CHUẨN ---
         val participants = listOf(currentUid, otherUid)
-        val chatId = firestore.collection("chats").document().id
+        // 1. Sắp xếp 2 UID để tạo ra ID nhất quán
+        val sortedIds = participants.sorted()
+        // 2. Tạo ID theo định dạng uid1_uid2
+        val chatId = "${sortedIds[0]}_${sortedIds[1]}"
 
-        val chatObject = Chat(
-            cid = chatId,
-            participants = participants,
-            // Các trường khác có thể để giá trị mặc định
+        // 3. Tạo đối tượng chat
+        val chat = mapOf(
+            "participants" to participants,
+            "createdAt" to FieldValue.serverTimestamp(),
+            "lastMessage" to "",
+            "updatedAt" to FieldValue.serverTimestamp()
         )
-        firestore.collection("chats").document(chatId).set(chatObject).await()
+
+        // 4. Dùng ID đã tạo để tạo document mới một cách TƯỜNG MINH
+        db.collection("chats").document(chatId).set(chat).await()
+        // --- KẾT THÚC LOGIC TẠO CHAT ID ---
     }
 
     fun rejectRequest(request: Friendship, onResult: (Boolean) -> Unit) {

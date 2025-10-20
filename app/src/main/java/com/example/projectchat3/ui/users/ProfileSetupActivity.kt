@@ -1,16 +1,22 @@
 package com.example.projectchat3.ui.users
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.example.projectchat3.databinding.ActivityProfileSetupBinding
 import com.example.projectchat3.ui.MainHomeActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import java.util.UUID
+import java.util.*
 
 class ProfileSetupActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileSetupBinding
@@ -19,7 +25,24 @@ class ProfileSetupActivity : AppCompatActivity() {
     private lateinit var storage: FirebaseStorage
     private var imageUri: Uri? = null
 
-    private val PICK_IMAGE_REQUEST = 1001
+    // --- Permission & Image Picker ---
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                imagePickerLauncher.launch("image/*")
+            } else {
+                Toast.makeText(this, "Bạn cần cấp quyền để chọn ảnh đại diện.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private val imagePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                imageUri = it
+                binding.imgAvatar.setImageURI(it)
+            }
+        }
+    // --- End ---
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,13 +53,8 @@ class ProfileSetupActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         storage = FirebaseStorage.getInstance()
 
-        // chọn ảnh
-        binding.btnChooseAvatar.setOnClickListener {
-            val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
-            startActivityForResult(intent, PICK_IMAGE_REQUEST)
-        }
+        binding.btnChooseAvatar.setOnClickListener { checkPermissionAndPickImage() }
 
-        // lưu thông tin
         binding.btnSave.setOnClickListener {
             val name = binding.edtName.text.toString().trim()
             val uid = auth.currentUser?.uid
@@ -50,7 +68,9 @@ class ProfileSetupActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Nếu có chọn ảnh thì upload trước
+            binding.btnSave.isEnabled = false
+            binding.progressBarSetup.visibility = View.VISIBLE
+
             if (imageUri != null) {
                 val ref = storage.reference.child("avatars/$uid/${UUID.randomUUID()}.jpg")
                 ref.putFile(imageUri!!)
@@ -58,14 +78,13 @@ class ProfileSetupActivity : AppCompatActivity() {
                         ref.downloadUrl.addOnSuccessListener { url ->
                             saveUserProfile(uid, name, url.toString())
                         }.addOnFailureListener { e ->
-                            Toast.makeText(this, "Không lấy được link ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
+                            handleFailure("Không lấy được link ảnh: ${e.message}")
                         }
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Upload ảnh thất bại: ${e.message}", Toast.LENGTH_SHORT).show()
+                        handleFailure("Upload ảnh thất bại: ${e.message}")
                     }
             } else {
-                // Không chọn ảnh thì vẫn lưu với avatar rỗng
                 saveUserProfile(uid, name, "")
             }
         }
@@ -86,15 +105,27 @@ class ProfileSetupActivity : AppCompatActivity() {
                 finish()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Lỗi lưu dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                handleFailure("Lỗi lưu dữ liệu: ${e.message}")
             }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK) {
-            imageUri = data?.data
-            binding.imgAvatar.setImageURI(imageUri) // preview ảnh
+    private fun handleFailure(errorMessage: String) {
+        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
+        binding.btnSave.isEnabled = true
+        binding.progressBarSetup.visibility = View.GONE
+    }
+
+    private fun checkPermissionAndPickImage() {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_IMAGES
+        else
+            Manifest.permission.READ_EXTERNAL_STORAGE
+
+        when {
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED ->
+                imagePickerLauncher.launch("image/*")
+            else ->
+                requestPermissionLauncher.launch(permission)
         }
     }
 }
