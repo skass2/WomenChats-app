@@ -26,7 +26,7 @@ class ChatListFragment : Fragment() {
 
         currentUid = FirebaseAuth.getInstance().uid ?: ""
 
-        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerChats)
+        val recyclerView = view.findViewById<RecyclerView>(R.id.chatListRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
 
         adapter = UserAdapter(mutableListOf()) { user ->

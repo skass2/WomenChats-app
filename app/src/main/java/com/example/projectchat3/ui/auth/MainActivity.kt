@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         progressBar = findViewById(R.id.progressBarLogin)
 
-        // ✅ Nếu user đã đăng nhập thì vào thẳng MainHomeActivity
+        //Nếu user đã đăng nhập thì vào thẳng MainHomeActivity
         if (auth.currentUser != null) {
             startActivity(Intent(this, MainHomeActivity::class.java))
             finish()

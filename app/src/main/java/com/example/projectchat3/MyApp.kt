@@ -22,21 +22,15 @@ class MyApp : Application() {
         firebaseAppCheck.installAppCheckProviderFactory(
             DebugAppCheckProviderFactory.getInstance()
         )
-        Log.d("MyApp", "AppCheck is FORCED to use Debug provider")
-        /*
-        if (BuildConfig.DEBUG) {
-            firebaseAppCheck.installAppCheckProviderFactory(
-                DebugAppCheckProviderFactory.getInstance()
-            )
-            Log.d("MyApp", "AppCheck Debug provider enabled")
-        } else {
-            firebaseAppCheck.installAppCheckProviderFactory(
-                PlayIntegrityAppCheckProviderFactory.getInstance()
-            )
-            Log.d("MyApp", "AppCheck Play Integrity enabled")
-        }
-        */
-        // --- GỌI HÀM TẠO KÊNH ---
+
+        firebaseAppCheck.getAppCheckToken(true)
+            .addOnSuccessListener { tokenResult ->
+                Log.d("MyApp_DebugToken", "Current Debug Token: ${tokenResult.token}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("MyApp_DebugToken", "Failed to get Debug Token", e)
+            }
+
         createNotificationChannel()
     }
 

@@ -47,3 +47,7 @@ so9:
 so10:
 	*Chức năng gửi ảnh hiện đang sửa
 	*Không có thay đổi gì thêm
+so11:
+	*Sửa 1 chút layout
+	*Sửa lại khung tin nhắn khi gửi ảnh
+	*Thêm tính năng xem ảnh

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectchat3.R
@@ -34,7 +35,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var currentUserId: String
     private lateinit var chatUserId: String
     private lateinit var chatId: String
-    private lateinit var btnAttachImage: ImageButton
+    private lateinit var btnAttachImage: ImageView
 
     private val viewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()), application)
@@ -63,6 +64,9 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
+        window.statusBarColor = ContextCompat.getColor(this, R.color.background)
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+
         // Xử lý khoảng trống bàn phím & thanh điều hướng
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -87,10 +91,10 @@ class ChatActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
 
-        btnAttachImage = findViewById(R.id.btnAttachImage)
+        btnAttachImage = findViewById(R.id.btnAttach)
         btnAttachImage.setOnClickListener { checkPermissionAndPickImage() }
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerMessages)
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewMessages)
         recyclerView.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
 
         adapter = MessageAdapter(
@@ -101,8 +105,8 @@ class ChatActivity : AppCompatActivity() {
         )
         recyclerView.adapter = adapter
 
-        val edtMessage = findViewById<EditText>(R.id.edtMessage)
-        val btnSend = findViewById<Button>(R.id.btnSend)
+        val edtMessage = findViewById<EditText>(R.id.editMessage)
+        val btnSend = findViewById<ImageView>(R.id.btnSend)
         val participants = listOf(currentUserId, chatUserId)
 
         fun sendMessage() {
