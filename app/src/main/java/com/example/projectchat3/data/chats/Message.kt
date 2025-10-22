@@ -4,10 +4,9 @@ import com.google.firebase.Timestamp
 
 data class Message(
     val id: String = "",              // ID của tin nhắn (Firestore documentId)
-    val senderId: String = "",        // UID người gửi
-    val receiverId: String = "",      // UID người nhận (thêm để tiện lọc)
-    val email: String? = null,        // Email người gửi (optional cho Firestore)
+    val senderId: String = "",     // Email người gửi (optional cho Firestore)
     var text: String = "",            // Nội dung tin nhắn
+    val imageUrl: String? = null, // Link ảnh, có thể null
     var deleted: Boolean = false,     // Đánh dấu đã xoá hay chưa
     val timestamp: Timestamp = Timestamp.now() // Thời điểm gửi
 )

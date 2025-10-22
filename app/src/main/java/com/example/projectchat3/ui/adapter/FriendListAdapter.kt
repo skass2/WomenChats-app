@@ -1,58 +1,70 @@
-// FriendListAdapter.kt
-package com.example.projectchat3.ui.adapter
+package com.example.projectchat3.ui.friends
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.projectchat3.R
-import com.example.projectchat3.data.friends.Friendship
 import com.example.projectchat3.data.users.User
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class FriendListAdapter(
-    private var friends: MutableList<Friendship>,
-    private val db: FirebaseFirestore,
-    private val onClick: (Friendship, User) -> Unit
+    private var friends: List<User>,
+    private val onClick: (User) -> Unit
 ) : RecyclerView.Adapter<FriendListAdapter.FriendViewHolder>() {
 
     inner class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvName: TextView = itemView.findViewById(R.id.tvUserName)
+        val imgAvatar: ImageView = itemView.findViewById(R.id.imgAvatarFriend)
+        val tvName: TextView = itemView.findViewById(R.id.tvUserNameFriend)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FriendViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_user, parent, false)
+            .inflate(R.layout.item_friend, parent, false)
         return FriendViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: FriendViewHolder, position: Int) {
-        val friendship = friends[position]
-        val myUid = FirebaseAuth.getInstance().uid
-        val friendUid = friendship.participants.firstOrNull { it != myUid } ?: return
+        val user = friends[position]
+        holder.tvName.text = user.name.ifBlank { "Người dùng ẩn danh" }
 
-        // ✅ Lấy thông tin bạn bè từ Firestore
-        db.collection("users").document(friendUid).get()
-            .addOnSuccessListener { doc ->
-                val user = doc.toObject(User::class.java)
-                if (user != null) {
-                    holder.tvName.text = user.name
-                    holder.itemView.setOnClickListener {
-                        onClick(friendship, user)
-                    }
-                } else {
-                    holder.tvName.text = "Unknown"
-                }
-            }
+        Glide.with(holder.itemView.context)
+            .load(
+                user.avatarUrl.takeIf { !it.isNullOrEmpty() }
+                    ?: R.drawable.ic_person // fallback ảnh mặc định
+            )
+            .placeholder(R.drawable.ic_person)
+            .circleCrop()
+            .into(holder.imgAvatar)
+
+        holder.itemView.setOnClickListener { onClick(user) }
     }
 
-    override fun getItemCount() = friends.size
+    override fun getItemCount(): Int = friends.size
 
-    fun updateFriends(newList: List<Friendship>) {
-        friends.clear()
-        friends.addAll(newList)
-        notifyDataSetChanged()
+    fun updateList(newFriends: List<User>) {
+        val diffCallback = FriendDiffCallback(friends, newFriends)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        friends = newFriends
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    private class FriendDiffCallback(
+        private val oldList: List<User>,
+        private val newList: List<User>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize() = oldList.size
+        override fun getNewListSize() = newList.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition].uid == newList[newItemPosition].uid
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition] == newList[newItemPosition]
+        }
     }
 }

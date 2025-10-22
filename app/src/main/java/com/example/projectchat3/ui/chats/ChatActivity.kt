@@ -1,23 +1,26 @@
 package com.example.projectchat3.ui.chats
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectchat3.R
-import com.example.projectchat3.data.chats.Message
 import com.example.projectchat3.data.chats.ChatRepository
+import com.example.projectchat3.data.chats.Message
 import com.example.projectchat3.data.users.User
 import com.example.projectchat3.ui.adapter.MessageAdapter
 import com.example.projectchat3.ui.chat.ChatViewModel
@@ -32,16 +35,39 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var currentUserId: String
     private lateinit var chatUserId: String
     private lateinit var chatId: String
+    private lateinit var btnAttachImage: ImageView
 
     private val viewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()), application)
     }
 
+    // --- Permission & Image Picker ---
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                imagePickerLauncher.launch("image/*")
+            } else {
+                Toast.makeText(this, "Bạn cần cấp quyền để gửi ảnh.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private val imagePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                val participants = listOf(currentUserId, chatUserId)
+                viewModel.sendImageMessage(it, participants)
+            }
+        }
+    // --- End ---
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_chat)
 
+        window.statusBarColor = ContextCompat.getColor(this, R.color.background)
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+
+        // Xử lý khoảng trống bàn phím & thanh điều hướng
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
@@ -53,11 +79,8 @@ class ChatActivity : AppCompatActivity() {
 
         currentUserId = FirebaseAuth.getInstance().uid!!
         chatUserId = intent.getStringExtra("uid")!!
-
-        // 🔥 chuẩn hoá chatId với Web
         chatId = listOf(currentUserId, chatUserId).sorted().joinToString("_")
 
-        // Title hiển thị tên
         tvTitle = findViewById(R.id.tvTitle)
         FirebaseFirestore.getInstance().collection("users").document(chatUserId).get()
             .addOnSuccessListener { doc ->
@@ -65,22 +88,25 @@ class ChatActivity : AppCompatActivity() {
                 tvTitle.text = chatUser?.name ?: "User"
             }
 
-        // Nút Back
         btnBack = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerMessages)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        btnAttachImage = findViewById(R.id.btnAttach)
+        btnAttachImage.setOnClickListener { checkPermissionAndPickImage() }
+
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewMessages)
+        recyclerView.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
+
         adapter = MessageAdapter(
-            mutableListOf(),
-            currentUserId,
-            onEdit = { message -> showEditDialog(message) },
-            onDelete = { message -> showDeleteDialog(message) }
+            messages = mutableListOf(),
+            currentUserId = currentUserId,
+            onEditMessage = { message -> showEditDialog(message) },
+            onDeleteMessage = { message -> showDeleteDialog(message) }
         )
         recyclerView.adapter = adapter
 
-        val edtMessage = findViewById<EditText>(R.id.edtMessage)
-        val btnSend = findViewById<Button>(R.id.btnSend)
+        val edtMessage = findViewById<EditText>(R.id.editMessage)
+        val btnSend = findViewById<ImageView>(R.id.btnSend)
         val participants = listOf(currentUserId, chatUserId)
 
         fun sendMessage() {
@@ -103,15 +129,29 @@ class ChatActivity : AppCompatActivity() {
             } else false
         }
 
-        // load tin nhắn realtime
         viewModel.getOrCreateChat(participants) { id ->
-            if (id != null) {
-                viewModel.loadMessages(id)
+            id?.let {
+                chatId = it
+                viewModel.loadMessages(it)
                 viewModel.messages.observe(this) { list ->
                     adapter.updateMessages(list)
                     if (list.isNotEmpty()) recyclerView.scrollToPosition(list.size - 1)
                 }
             }
+        }
+    }
+
+    private fun checkPermissionAndPickImage() {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_IMAGES
+        else
+            Manifest.permission.READ_EXTERNAL_STORAGE
+
+        when {
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED ->
+                imagePickerLauncher.launch("image/*")
+            else ->
+                requestPermissionLauncher.launch(permission)
         }
     }
 
@@ -124,12 +164,7 @@ class ChatActivity : AppCompatActivity() {
             .setPositiveButton("Lưu") { _, _ ->
                 val newText = input.text.toString().trim()
                 if (newText.isNotEmpty()) {
-                    val participants = listOf(currentUserId, chatUserId)
-                    viewModel.getOrCreateChat(participants) { chatId ->
-                        if (chatId != null) {
-                            viewModel.updateMessage(chatId, message.id, newText)
-                        }
-                    }
+                    viewModel.updateMessage(chatId, message.id, newText)
                 }
             }
             .setNegativeButton("Hủy", null)
@@ -141,12 +176,7 @@ class ChatActivity : AppCompatActivity() {
             .setTitle("Xóa tin nhắn")
             .setMessage("Bạn có chắc muốn xóa tin nhắn này?")
             .setPositiveButton("Xóa") { _, _ ->
-                val participants = listOf(currentUserId, chatUserId)
-                viewModel.getOrCreateChat(participants) { chatId ->
-                    if (chatId != null) {
-                        viewModel.deleteMessage(chatId, message.id)
-                    }
-                }
+                viewModel.deleteMessage(chatId, message.id)
             }
             .setNegativeButton("Hủy", null)
             .show()

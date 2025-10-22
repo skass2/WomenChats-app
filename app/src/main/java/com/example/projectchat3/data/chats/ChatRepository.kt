@@ -1,32 +1,32 @@
 package com.example.projectchat3.data.chats
 
+import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
 class ChatRepository(private val db: FirebaseFirestore) {
+    private val storage = FirebaseStorage.getInstance()
     fun getOrCreateChat(participants: List<String>, onResult: (String?) -> Unit) {
-        db.collection("chats")
-            .whereArrayContains("participants", participants[0])
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val existingChat = snapshot.documents.find { doc ->
-                    val users = doc.get("participants") as? List<*>
-                    users != null && users.containsAll(participants)
-                }
+        // Sắp xếp ID để truy vấn cho đúng
+        val sortedIds = participants.sorted()
+        val chatId = "${sortedIds[0]}_${sortedIds[1]}"
 
-                if (existingChat != null) {
-                    // ✅ Chat đã tồn tại
-                    onResult(existingChat.id)
+        db.collection("chats").document(chatId).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    //Chat đã tồn tại, trả về ID
+                    onResult(doc.id)
                 } else {
-                    // ❌ Chưa có -> tạo mới
-                    val newChatRef = db.collection("chats").document()
+                    //Chưa có -> tạo mới với ID đã được chuẩn hóa
                     val newChat = mapOf(
                         "participants" to participants,
                         "lastMessage" to "",
                         "updatedAt" to System.currentTimeMillis()
                     )
-                    newChatRef.set(newChat)
-                        .addOnSuccessListener { onResult(newChatRef.id) }
+                    db.collection("chats").document(chatId).set(newChat)
+                        .addOnSuccessListener { onResult(chatId) } // Trả về ID vừa tạo
                         .addOnFailureListener { onResult(null) }
                 }
             }
@@ -91,6 +91,36 @@ class ChatRepository(private val db: FirebaseFirestore) {
             )
             .addOnSuccessListener { onResult(true) }
             .addOnFailureListener { onResult(false) }
+    }
+
+    fun sendImageMessage(
+        roomId: String,
+        imageUri: Uri,
+        senderId: String,
+        participants: List<String>,
+        onResult: (Boolean) -> Unit
+    ) {
+        val fileName = "${UUID.randomUUID()}.jpg"
+        val storageRef = storage.reference.child("chat_media/$roomId/$fileName")
+
+        // 1. Upload ảnh lên Storage
+        storageRef.putFile(imageUri)
+            .addOnSuccessListener {
+                // 2. Lấy URL của ảnh vừa upload
+                storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                    // 3. Tạo một tin nhắn mới chứa URL ảnh
+                    val message = Message(
+                        senderId = senderId,
+                        imageUrl = downloadUrl.toString(),
+                        text = "" // Tin nhắn ảnh không có text
+                    )
+                    // 4. Gửi tin nhắn đó đi
+                    sendMessage(roomId, message, participants, onResult)
+                }
+            }
+            .addOnFailureListener {
+                onResult(false)
+            }
     }
 
 }

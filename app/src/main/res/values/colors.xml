@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="colorPrimary">#5C7AEA</color>
+    <color name="colorPrimaryLight">#A7C7E7</color>
+    <color name="colorPrimaryDark">#3450A1</color>
+    <color name="colorAccent">#5C7AEA</color>
+
+    <color name="background">#F5F6FA</color>
+    <color name="textPrimary">#1E1E1E</color>
+    <color name="textSecondary">#666666</color>
+
+    <color name="bubbleMine">#A7C7E7</color>
+    <color name="bubbleOther">#E6E9F0</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

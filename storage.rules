@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Cho phép user tạo bất kỳ tệp nào bên trong thư mục mang tên UID của họ
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Media trong chat
+    match /chat_media/{chatId}/{fileName} {
+    	allow read, write: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.uid in chatId.split('_')
+        && request.resource.size < 50 * 1024 * 1024;
+    }
+  }
+}

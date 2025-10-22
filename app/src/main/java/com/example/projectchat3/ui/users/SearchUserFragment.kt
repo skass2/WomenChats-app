@@ -31,6 +31,7 @@ class SearchUserFragment : Fragment() {
     private val userViewModel: UserViewModel by viewModels {
         UserViewModelFactory(UserRepository(FirebaseFirestore.getInstance()))
     }
+
     private val friendViewModel: FriendshipViewModel by viewModels {
         FriendshipViewModelFactory(FriendshipRepository(FirebaseFirestore.getInstance()))
     }
@@ -39,20 +40,35 @@ class SearchUserFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_search_user, container, false)
-
         currentUid = FirebaseAuth.getInstance().uid ?: ""
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerUsers)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
 
-        // ✅ Dùng UserSearchAdapter (có nút Add Friend)
-        adapter = UserSearchAdapter(mutableListOf()) { user ->
+        //  Adapter xử lý gửi lời mời thật (Firestore)
+        adapter = UserSearchAdapter(mutableListOf()) { user, onResult ->
             if (user.uid != currentUid) {
-                friendViewModel.sendRequest(currentUid, user.uid)
-                Toast.makeText(requireContext(), "Đã gửi lời mời kết bạn!", Toast.LENGTH_SHORT)
-                    .show()
+                friendViewModel.sendRequest(currentUid, user.uid) { success ->
+                    onResult(success)
+                    if (success) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Đã gửi lời mời kết bạn đến ${user.name}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            "Gửi lời mời thất bại, thử lại sau",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            } else {
+                onResult(false)
             }
         }
+
         recyclerView.adapter = adapter
 
         val etSearch = view.findViewById<EditText>(R.id.etSearch)
@@ -60,17 +76,43 @@ class SearchUserFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                userViewModel.searchUsers(s.toString())
+                val query = s.toString().trim()
+                if (query.isNotEmpty()) {
+                    userViewModel.searchUsers(query)
+                } else {
+                    adapter.updateUsers(emptyList())
+                }
             }
         })
 
-        // Quan sát LiveData users
+        //  Quan sát danh sách người dùng được tìm thấy
         userViewModel.users.observe(viewLifecycleOwner) { list ->
             adapter.updateUsers(list)
         }
 
-        // load tất cả user ban đầu
-        userViewModel.loadUsers()
+        //  Quan sát danh sách bạn bè
+        friendViewModel.friends.observe(viewLifecycleOwner) { friendships ->
+            if (currentUid.isBlank()) return@observe
+            val friendUids = friendships.mapNotNull { fr ->
+                fr.participants.firstOrNull { it != currentUid }
+            }.distinct()
+            adapter.markFriends(friendUids)
+        }
+
+        //  Quan sát danh sách lời mời đã gửi
+        friendViewModel.sentRequests.observe(viewLifecycleOwner) { requests ->
+            if (currentUid.isBlank()) return@observe
+            val sentUids = requests.mapNotNull { fr ->
+                fr.participants.firstOrNull { it != currentUid }
+            }.distinct()
+            adapter.markSentRequests(sentUids)
+        }
+
+        //  Load dữ liệu ban đầu
+        if (currentUid.isNotBlank()) {
+            friendViewModel.loadFriends(currentUid)
+            friendViewModel.loadSentRequests(currentUid)
+        }
 
         return view
     }

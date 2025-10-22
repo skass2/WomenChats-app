@@ -1,4 +1,4 @@
-package com.example.projectchat3.ui.friend
+package com.example.projectchat3.ui.friends
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,55 +6,74 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectchat3.R
-import com.example.projectchat3.data.friends.Friendship
-import com.example.projectchat3.data.friends.FriendshipRepository
-import com.example.projectchat3.ui.adapter.FriendListAdapter
+import com.example.projectchat3.data.users.User
 import com.example.projectchat3.ui.chats.ChatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 class FriendListFragment : Fragment() {
 
     private lateinit var adapter: FriendListAdapter
-
-    private val viewModel: FriendshipViewModel by viewModels {
-        FriendshipViewModelFactory(FriendshipRepository(FirebaseFirestore.getInstance()))
-    }
+    private val db = FirebaseFirestore.getInstance()
+    private val currentUid = FirebaseAuth.getInstance().uid ?: ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    ): View? {
         val view = inflater.inflate(R.layout.fragment_friend_list, container, false)
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerFriends)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
 
-        adapter = FriendListAdapter(
-            friends = mutableListOf(),
-            db = FirebaseFirestore.getInstance(),
-            onClick = { friendship, user ->
-                // ví dụ: mở ChatActivity
-                val intent = Intent(requireContext(), ChatActivity::class.java)
-                intent.putExtra("uid", user.uid)
-                startActivity(intent)
-            }
-        )
-
+        adapter = FriendListAdapter(emptyList()) { user ->
+            val intent = Intent(requireContext(), ChatActivity::class.java)
+            intent.putExtra("uid", user.uid)
+            startActivity(intent)
+        }
         recyclerView.adapter = adapter
 
-        viewModel.friends.observe(viewLifecycleOwner) { list ->
-            adapter.updateFriends(list)
-        }
-
-        val currentUid = FirebaseAuth.getInstance().uid
-        if (currentUid != null) {
-            viewModel.loadFriends(currentUid)
-        }
+        loadFriends()
 
         return view
+    }
+
+    private fun loadFriends() {
+        if (currentUid.isEmpty()) return
+
+        // 1. Lấy các friendship mà user tham gia và đã accepted
+        db.collection("friendships")
+            .whereArrayContains("participants", currentUid)
+            .whereEqualTo("status", "accepted")
+            .get()
+            .addOnSuccessListener { friendshipSnapshot ->
+                if (friendshipSnapshot == null || friendshipSnapshot.isEmpty) {
+                    adapter.updateList(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                // Lấy hết ID của bạn bè
+                val friendUids = friendshipSnapshot.documents.mapNotNull { doc ->
+                    val participants = doc.get("participants") as? List<*>
+                    participants?.firstOrNull { it != currentUid } as? String
+                }
+
+                if (friendUids.isEmpty()) {
+                    adapter.updateList(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                // Lấy thông tin user trong 1 truy vấn duy nhất
+                db.collection("users")
+                    .whereIn("uid", friendUids)
+                    .get()
+                    .addOnSuccessListener { userResult ->
+                        val friends = userResult.toObjects(User::class.java)
+                        adapter.updateList(friends)
+                    }
+            }
     }
 }

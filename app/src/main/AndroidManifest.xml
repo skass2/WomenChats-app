@@ -3,8 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- image -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
+        android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -14,10 +20,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjectChat3">
         <activity
-            android:name=".ui.home.MainHomeActivity"
+            android:name=".ui.chats.FullImageActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity
+            android:name=".ui.auth.VerifyEmailActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.friend.FriendListActivity"
+            android:name=".ui.MainHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.users.ProfileSetupActivity"
             android:exported="false" />
         <activity
             android:name=".ui.friend.FriendRequestActivity"
@@ -37,6 +49,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".services.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
