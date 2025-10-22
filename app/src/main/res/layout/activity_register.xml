@@ -6,15 +6,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_gradient">
 
-    <ImageButton
-        android:id="@+id/btnBack"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/back"
-        android:layout_marginBottom="16dp"
-        app:tint="#FFFFFF" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -37,6 +28,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Email"
+            android:textColorHint="@color/white"
+            android:textCursorDrawable="@drawable/white_cursor"
             android:background="@drawable/edittext_bg"
             android:padding="14dp"
             android:textSize="16sp"
@@ -48,6 +41,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Mật khẩu"
+            android:textColorHint="@color/white"
+            android:textCursorDrawable="@drawable/white_cursor"
             android:inputType="textPassword"
             android:drawableEnd="@drawable/hide"
             android:drawablePadding="12dp"
@@ -71,6 +66,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Xác nhận mật khẩu"
+            android:textColorHint="@color/white"
+            android:textCursorDrawable="@drawable/white_cursor"
             android:inputType="textPassword"
             android:drawableEnd="@drawable/hide"
             android:drawablePadding="12dp"

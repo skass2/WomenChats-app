@@ -16,7 +16,7 @@ class ChatRepository(private val db: FirebaseFirestore) {
         db.collection("chats").document(chatId).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    //Chat đã tồn tại, trả về ID
+                    //Chats đã tồn tại, trả về ID
                     onResult(doc.id)
                 } else {
                     //Chưa có -> tạo mới với ID đã được chuẩn hóa

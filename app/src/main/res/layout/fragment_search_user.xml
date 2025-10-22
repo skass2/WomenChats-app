@@ -10,8 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Tìm bạn theo tên hoặc email"
-        android:padding="12dp"
+        android:textColorHint="@color/black"
+        android:padding="15dp"
         android:background="@android:drawable/editbox_background"
+        android:textColor="@color/black"
         android:inputType="text" />
 
     <androidx.recyclerview.widget.RecyclerView

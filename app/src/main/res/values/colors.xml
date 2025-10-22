@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#5C7AEA</color>
-    <color name="colorPrimaryLight">#A7C7E7</color>
-    <color name="colorPrimaryDark">#3450A1</color>
-    <color name="colorAccent">#5C7AEA</color>
+    <!-- Primary theme colors -->
+    <color name="colorPrimary">#6C63FF</color>
+    <color name="colorPrimaryLight">#A99DFF</color>
+    <color name="colorPrimaryDark">#4C48B5</color>
+    <color name="colorAccent">#8F94FB</color>
 
-    <color name="background">#F5F6FA</color>
+    <!-- Backgrounds & surfaces -->
+    <color name="background">#F7F8FC</color>
+    <color name="surface">#FFFFFF</color>
+
+    <!-- Text colors -->
     <color name="textPrimary">#1E1E1E</color>
-    <color name="textSecondary">#666666</color>
+    <color name="textSecondary">#707070</color>
 
-    <color name="bubbleMine">#A7C7E7</color>
-    <color name="bubbleOther">#E6E9F0</color>
+    <!-- Chat bubbles -->
+    <color name="bubbleMine">#D8DCFF</color>
+    <color name="bubbleOther">#EAEAEA</color>
 
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Common -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- System / accent -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FFC107</color>
+    <color name="error">#E53935</color>
 </resources>
