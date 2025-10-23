@@ -6,7 +6,6 @@ import android.os.CountDownTimer
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.projectchat3.databinding.ActivityVerifyEmailBinding
-import com.example.projectchat3.ui.MainHomeActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class VerifyEmailActivity : AppCompatActivity() {
@@ -20,30 +19,49 @@ class VerifyEmailActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         auth = FirebaseAuth.getInstance()
-        val email = auth.currentUser?.email ?: ""
-        binding.txtEmail.text = maskEmail(email)
+
+        // --- Lấy email & password từ intent gửi sang ---
+        val regEmail = intent.getStringExtra("email") ?: auth.currentUser?.email ?: ""
+        val regPassword = intent.getStringExtra("password") ?: ""
+
+        // --- Hiển thị email bị ẩn ---
+        binding.txtEmail.text = maskEmail(regEmail)
 
         startCooldown()
 
+        // --- Gửi lại email xác thực ---
         binding.btnResend.setOnClickListener {
             auth.currentUser?.sendEmailVerification()?.addOnSuccessListener {
                 Toast.makeText(this, "Đã gửi lại email xác thực", Toast.LENGTH_SHORT).show()
                 startCooldown()
+            }?.addOnFailureListener {
+                Toast.makeText(this, "Gửi lại thất bại: ${it.message}", Toast.LENGTH_SHORT).show()
             }
         }
 
+        // --- Kiểm tra trạng thái xác thực ---
         binding.btnCheckVerified.setOnClickListener {
             auth.currentUser?.reload()?.addOnSuccessListener {
                 if (auth.currentUser?.isEmailVerified == true) {
                     Toast.makeText(this, "Xác thực thành công!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, MainHomeActivity::class.java))
+
+                    auth.signOut()
+
+                    // Trả lại màn hình login, truyền kèm email + password
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.putExtra("email", regEmail)
+                    intent.putExtra("password", regPassword)
+                    startActivity(intent)
                     finish()
                 } else {
                     Toast.makeText(this, "Bạn chưa xác thực email", Toast.LENGTH_SHORT).show()
                 }
+            }?.addOnFailureListener {
+                Toast.makeText(this, "Không thể kiểm tra trạng thái: ${it.message}", Toast.LENGTH_SHORT).show()
             }
         }
 
+        // --- Quay lại đăng nhập ---
         binding.btnBackLogin.setOnClickListener {
             auth.signOut()
             startActivity(Intent(this, MainActivity::class.java))
@@ -51,6 +69,7 @@ class VerifyEmailActivity : AppCompatActivity() {
         }
     }
 
+    // --- Bộ đếm thời gian cho nút gửi lại ---
     private fun startCooldown() {
         binding.btnResend.isEnabled = false
         cooldown?.cancel()
@@ -58,6 +77,7 @@ class VerifyEmailActivity : AppCompatActivity() {
             override fun onTick(millisUntilFinished: Long) {
                 binding.btnResend.text = "Gửi lại sau ${millisUntilFinished / 1000}s"
             }
+
             override fun onFinish() {
                 binding.btnResend.isEnabled = true
                 binding.btnResend.text = "Gửi lại email"
@@ -65,6 +85,7 @@ class VerifyEmailActivity : AppCompatActivity() {
         }.start()
     }
 
+    // --- Ẩn bớt phần tên trong email ---
     fun maskEmail(email: String): String {
         val parts = email.split("@")
         if (parts.size != 2) return email
@@ -72,7 +93,6 @@ class VerifyEmailActivity : AppCompatActivity() {
         val username = parts[0]
         val domain = parts[1]
 
-        // Nếu tên ngắn thì xử lý khác
         val hiddenUsername = when {
             username.length <= 2 -> username.first() + "*"
             username.length <= 4 -> username.take(2) + "*".repeat(username.length - 2)
@@ -82,4 +102,8 @@ class VerifyEmailActivity : AppCompatActivity() {
         return "$hiddenUsername@$domain"
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        cooldown?.cancel()
+    }
 }

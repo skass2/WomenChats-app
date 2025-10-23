@@ -1,5 +1,6 @@
 package com.example.projectchat3.ui.auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.MotionEvent
@@ -14,12 +15,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.example.projectchat3.R
 import com.example.projectchat3.databinding.ActivityRegisterBinding
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class RegisterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var auth: FirebaseAuth
-    private lateinit var db: FirebaseFirestore
     private var isPasswordVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,11 +36,8 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         auth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
 
-        binding.btnBackToLogin.setOnClickListener {
-            finish()
-        }
+        binding.btnBackToLogin.setOnClickListener { finish() }
         setupSharedPasswordToggle(binding.edtPassword, binding.edtConfirmPassword)
 
         binding.btnRegister.setOnClickListener {
@@ -49,10 +45,8 @@ class RegisterActivity : AppCompatActivity() {
             val password = binding.edtPassword.text.toString().trim()
             val confirm = binding.edtConfirmPassword.text.toString().trim()
 
-            // reset lỗi
-            binding.txtPasswordError.text = ""
+            // Reset lỗi
             binding.txtPasswordError.visibility = View.GONE
-            binding.txtConfirmError.text = ""
             binding.txtConfirmError.visibility = View.GONE
 
             if (email.isEmpty() || password.isEmpty()) {
@@ -72,27 +66,34 @@ class RegisterActivity : AppCompatActivity() {
                 binding.txtConfirmError.visibility = View.VISIBLE
                 return@setOnClickListener
             }
-            // Hiển thị ProgressBar và vô hiệu hóa nút bấm
+
             binding.progressBarRegister.visibility = View.VISIBLE
             binding.btnRegister.isEnabled = false
-            binding.btnBackToLogin.isEnabled = false
+
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
-                    // Khi hoàn tất, ẩn ProgressBar và bật lại nút
                     binding.progressBarRegister.visibility = View.GONE
                     binding.btnRegister.isEnabled = true
-                    binding.btnBackToLogin.isEnabled = true
 
                     if (task.isSuccessful) {
                         auth.currentUser?.sendEmailVerification()
                             ?.addOnSuccessListener {
                                 Toast.makeText(
                                     this,
-                                    "Đăng ký thành công! Vui lòng xác thực email trước khi đăng nhập.",
+                                    "Đăng ký thành công! Vui lòng xác thực email.",
                                     Toast.LENGTH_LONG
                                 ).show()
-                                auth.signOut()
+
+                                // ❗Không tạo Firestore user tại đây
+                                // Chuyển sang màn xác thực
+                                val intent = Intent(this, VerifyEmailActivity::class.java)
+                                intent.putExtra("email", email)
+                                intent.putExtra("password", password)
+                                startActivity(intent)
                                 finish()
+                            }
+                            ?.addOnFailureListener {
+                                Toast.makeText(this, "Không gửi được email xác thực: ${it.message}", Toast.LENGTH_LONG).show()
                             }
                     } else {
                         binding.txtPasswordError.text = "Đăng ký thất bại: ${task.exception?.message}"
@@ -104,20 +105,14 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun validatePassword(password: String): String? {
         val errors = mutableListOf<String>()
-
         if (password.length < 6) errors.add("ít nhất 6 ký tự")
         if (password.length > 30) errors.add("không quá 30 ký tự")
-        if (!password.any { it.isLowerCase() }) errors.add("ít nhất 1 chữ cái")
+        if (!password.any { it.isLowerCase() }) errors.add("ít nhất 1 chữ cái thường")
         if (!password.any { it.isDigit() }) errors.add("ít nhất 1 chữ số")
         if (!password.any { !it.isLetterOrDigit() }) errors.add("ít nhất 1 ký tự đặc biệt")
 
-        return if (errors.isEmpty()) {
-            null
-        } else {
-            "Mật khẩu không hợp lệ: Chứa " + errors.joinToString(", ")
-        }
+        return if (errors.isEmpty()) null else "Mật khẩu không hợp lệ: ${errors.joinToString(", ")}"
     }
-
 
     private fun setupSharedPasswordToggle(passwordEdit: EditText, confirmEdit: EditText) {
         val toggleListener = { editText: EditText ->
@@ -126,17 +121,17 @@ class RegisterActivity : AppCompatActivity() {
                     if (event.rawX >= (editText.right - editText.compoundDrawables[2].bounds.width())) {
                         isPasswordVisible = !isPasswordVisible
 
-                        if (isPasswordVisible) {
-                            passwordEdit.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                            confirmEdit.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                            passwordEdit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide, 0)
-                            confirmEdit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide, 0)
-                        } else {
-                            passwordEdit.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                            confirmEdit.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                            passwordEdit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide_off, 0)
-                            confirmEdit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide_off, 0)
-                        }
+                        val inputType = if (isPasswordVisible)
+                            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                        else
+                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+
+                        passwordEdit.inputType = inputType
+                        confirmEdit.inputType = inputType
+
+                        val icon = if (isPasswordVisible) R.drawable.hide else R.drawable.hide_off
+                        passwordEdit.setCompoundDrawablesWithIntrinsicBounds(0, 0, icon, 0)
+                        confirmEdit.setCompoundDrawablesWithIntrinsicBounds(0, 0, icon, 0)
 
                         editText.setSelection(editText.text.length)
                         return@setOnTouchListener true
@@ -145,7 +140,6 @@ class RegisterActivity : AppCompatActivity() {
                 false
             }
         }
-
         toggleListener(passwordEdit)
         toggleListener(confirmEdit)
     }

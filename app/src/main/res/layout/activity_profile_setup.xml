@@ -1,46 +1,82 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:padding="24dp">
 
-    <ImageView
-        android:id="@+id/imgAvatar"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@drawable/ic_person"
-        android:scaleType="centerCrop"
-        android:background="@drawable/circle_background"
-        android:layout_marginBottom="16dp" />
-
-    <Button
-        android:id="@+id/btnChooseAvatar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Chọn ảnh đại diện" />
-
-    <EditText
-        android:id="@+id/edtName"
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nhập tên hiển thị"
-        android:inputType="textPersonName"
-        android:layout_marginTop="16dp" />
+        android:gravity="center_horizontal">
 
-    <ProgressBar
-        android:id="@+id/progressBarSetup"
-        style="?android:attr/progressBarStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="16dp"
-        android:visibility="gone" />
+        <!-- Card container -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:padding="24dp"
+            android:elevation="4dp"
+            android:gravity="center_horizontal">
 
-    <Button
-        android:id="@+id/btnSave"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Lưu"
-        android:layout_marginTop="8dp" />
-</LinearLayout>
+            <!-- Avatar -->
+            <ImageView
+                android:id="@+id/imgAvatar"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:src="@drawable/ic_person"
+                android:scaleType="centerCrop"
+                android:background="@drawable/circle_background"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Button chọn ảnh -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChooseAvatar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chọn ảnh đại diện"
+                style="@style/Widget.Material3.Button.TextButton"
+                app:icon="@drawable/ic_add_photo"
+                app:iconTint="?attr/colorPrimary"
+                app:iconPadding="8dp" />
+
+            <!-- Nhập tên -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Tên hiển thị">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Progress -->
+            <ProgressBar
+                android:id="@+id/progressBarSetup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+
+            <!-- Nút lưu -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lưu"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:backgroundTint="?attr/colorPrimary"
+                app:cornerRadius="16dp"
+                android:layout_marginTop="24dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

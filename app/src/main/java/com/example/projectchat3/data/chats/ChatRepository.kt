@@ -55,6 +55,24 @@ class ChatRepository(private val db: FirebaseFirestore) {
 
         db.collection("chats").document(roomId).set(chatUpdate, SetOptions.merge())
     }
+    fun uploadMediaToStorage(
+        uri: Uri,
+        chatId: String,
+        folder: String,
+        onSuccess: (String) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val storageRef = FirebaseStorage.getInstance()
+            .reference.child("$folder/$chatId/${System.currentTimeMillis()}_${uri.lastPathSegment}")
+
+        storageRef.putFile(uri)
+            .addOnSuccessListener {
+                storageRef.downloadUrl.addOnSuccessListener { url ->
+                    onSuccess(url.toString())
+                }
+            }
+            .addOnFailureListener(onFailure)
+    }
 
 
     fun listenMessages(roomId: String, onChange: (List<Message>) -> Unit) {

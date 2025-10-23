@@ -9,7 +9,7 @@
     <!-- Backgrounds & surfaces -->
     <color name="background">#F7F8FC</color>
     <color name="surface">#FFFFFF</color>
-
+    <color name="gray">#9EB0B9</color>
     <!-- Text colors -->
     <color name="textPrimary">#1E1E1E</color>
     <color name="textSecondary">#707070</color>
@@ -26,4 +26,5 @@
     <color name="success">#4CAF50</color>
     <color name="warning">#FFC107</color>
     <color name="error">#E53935</color>
+    <color name="teal_700">#00796B</color>
 </resources>

@@ -4,10 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.MotionEvent
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -24,13 +22,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private var isPasswordVisible = false
-    private lateinit var progressBar: android.widget.ProgressBar
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        // --- Giao diện ---
         window.statusBarColor = ContextCompat.getColor(this, R.color.background)
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
 
@@ -44,111 +43,142 @@ class MainActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         progressBar = findViewById(R.id.progressBarLogin)
 
-        //Nếu user đã đăng nhập thì vào thẳng MainHomeActivity
-        if (auth.currentUser != null) {
-            startActivity(Intent(this, MainHomeActivity::class.java))
-            finish()
-            return
+        val emailField = findViewById<EditText>(R.id.etEmail)
+        val passwordField = findViewById<EditText>(R.id.etPassword)
+        val btnLogin = findViewById<Button>(R.id.btnLogin)
+        val txtRegister = findViewById<TextView>(R.id.txtRegister)
+
+        // --- Nhận email và mật khẩu từ VerifyEmailActivity ---
+        intent.getStringExtra("email")?.let { emailField.setText(it) }
+        intent.getStringExtra("password")?.let { passwordField.setText(it) }
+
+        // --- Nếu user đã đăng nhập và đã xác thực ---
+        auth.currentUser?.let { user ->
+            if (user.isEmailVerified) {
+                startActivity(Intent(this, MainHomeActivity::class.java))
+                finish()
+                return
+            } else {
+                auth.signOut()
+            }
         }
 
-        val email = findViewById<EditText>(R.id.etEmail)
-        val password = findViewById<EditText>(R.id.etPassword)
-        val btnLogin = findViewById<Button>(R.id.btnLogin)
-        val Register = findViewById<TextView>(R.id.txtRegister)
-
-        // toggle password visible
-        password.setOnTouchListener { _, event ->
+        // --- Toggle hiện/ẩn mật khẩu ---
+        passwordField.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                if (event.rawX >= (password.right - password.compoundDrawables[2].bounds.width())) {
+                val drawableEnd = passwordField.compoundDrawables[2]
+                if (drawableEnd != null && event.rawX >= (passwordField.right - drawableEnd.bounds.width())) {
                     isPasswordVisible = !isPasswordVisible
-                    if (isPasswordVisible) {
-                        password.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                        password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide, 0)
-                    } else {
-                        password.inputType =
-                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                        password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.hide_off, 0)
-                    }
-                    password.setSelection(password.text.length)
+                    val inputType = if (isPasswordVisible)
+                        InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                    else
+                        InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                    passwordField.inputType = inputType
+
+                    val icon = if (isPasswordVisible) R.drawable.hide else R.drawable.hide_off
+                    passwordField.setCompoundDrawablesWithIntrinsicBounds(0, 0, icon, 0)
+                    passwordField.setSelection(passwordField.text.length)
                     return@setOnTouchListener true
                 }
             }
             false
         }
 
-        Register.setOnClickListener {
+        // --- Chuyển đến đăng ký ---
+        txtRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
 
+        // --- Xử lý đăng nhập ---
         btnLogin.setOnClickListener {
-            if (email.text.toString().isEmpty() || password.text.toString().isEmpty()) {
+            val email = emailField.text.toString().trim()
+            val password = passwordField.text.toString().trim()
+
+            if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            progressBar.visibility = android.view.View.VISIBLE
+            progressBar.visibility = View.VISIBLE
             btnLogin.isEnabled = false
 
-            auth.signInWithEmailAndPassword(email.text.toString(), password.text.toString())
+            auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val user = auth.currentUser ?: return@addOnCompleteListener
-
-                        // --- LOGIC MỚI BẮT ĐẦU TỪ ĐÂY ---
-                        var isProceeded = false
-                        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-
-                        // 1. Đặt một "đồng hồ hẹn giờ" 3 giây
-                        // Nếu sau 3 giây mà reload() chưa xong, ta sẽ tự động tiếp tục
-                        handler.postDelayed({
-                            if (!isProceeded) {
-                                isProceeded = true
-                                proceedToNextScreen(user)
-                            }
-                        }, 3000) // 3 giây timeout
-
-                        // 2. Cố gắng reload() trạng thái user
-                        user.reload().addOnCompleteListener {
-                            if (!isProceeded) {
-                                isProceeded = true
-                                proceedToNextScreen(user)
+                        user.reload().addOnSuccessListener {
+                            if (user.isEmailVerified) {
+                                handleVerifiedLogin(user)
+                            } else {
+                                progressBar.visibility = View.GONE
+                                btnLogin.isEnabled = true
+                                Toast.makeText(
+                                    this,
+                                    "Email chưa xác thực. Vui lòng kiểm tra hộp thư!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                auth.signOut()
                             }
                         }
-
                     } else {
-                        progressBar.visibility = android.view.View.GONE
+                        progressBar.visibility = View.GONE
                         btnLogin.isEnabled = true
-                        Toast.makeText(this, "Sai tài khoản hoặc mật khẩu: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            "Sai tài khoản hoặc mật khẩu: ${task.exception?.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
         }
-
     }
-    // Tách ra một hàm riêng để xử lý logic chuyển màn hình
-    private fun proceedToNextScreen(user: com.google.firebase.auth.FirebaseUser) {
-        // Luôn kiểm tra lại trạng thái email_verified sau khi đã reload (hoặc timeout)
-        if (!user.isEmailVerified) {
-            Toast.makeText(this, "Email chưa xác thực. Vui lòng kiểm tra hộp thư!", Toast.LENGTH_LONG).show()
-            auth.signOut()
-            return
-        }
 
+    // --- Khi user đã xác thực email ---
+    private fun handleVerifiedLogin(user: com.google.firebase.auth.FirebaseUser) {
         val uid = user.uid
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists() && !doc.getString("name").isNullOrEmpty()) {
-                    startActivity(Intent(this, MainHomeActivity::class.java))
+        val userRef = db.collection("users").document(uid)
+
+        userRef.get().addOnSuccessListener { doc ->
+            if (!doc.exists()) {
+                // 🔹 Tạo user mới chỉ khi chưa có
+                val newUser = hashMapOf(
+                    "uid" to uid,
+                    "email" to (user.email ?: ""),
+                    "createdAt" to com.google.firebase.Timestamp.now(),
+                    "name" to "",
+                    "avatar" to ""
+                )
+                userRef.set(newUser)
+                    .addOnSuccessListener {
+                        navigateToProfileSetup()
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Lỗi khi tạo user: ${it.message}", Toast.LENGTH_LONG).show()
+                        navigateToProfileSetup()
+                    }
+            } else {
+                // 🔹 Nếu user đã có thông tin
+                if (!doc.getString("name").isNullOrEmpty()) {
+                    navigateToMainHome()
                 } else {
-                    startActivity(Intent(this, ProfileSetupActivity::class.java))
+                    navigateToProfileSetup()
                 }
-                finish()
             }
-            .addOnFailureListener { e ->
-                // ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT: BẮT LỖI KHI ĐỌC FIRESTORE
-                Toast.makeText(this, "Lỗi đọc dữ liệu: ${e.message}", Toast.LENGTH_LONG).show()
-                // Có thể người dùng chưa kịp tạo profile, chuyển họ đến màn hình tạo
-                startActivity(Intent(this, ProfileSetupActivity::class.java))
-                finish()
-            }
+        }.addOnFailureListener { e ->
+            Toast.makeText(this, "Lỗi đọc dữ liệu: ${e.message}", Toast.LENGTH_LONG).show()
+            navigateToProfileSetup()
+        }
+    }
+
+    private fun navigateToMainHome() {
+        progressBar.visibility = View.GONE
+        startActivity(Intent(this, MainHomeActivity::class.java))
+        finish()
+    }
+
+    private fun navigateToProfileSetup() {
+        progressBar.visibility = View.GONE
+        startActivity(Intent(this, ProfileSetupActivity::class.java))
+        finish()
     }
 }
