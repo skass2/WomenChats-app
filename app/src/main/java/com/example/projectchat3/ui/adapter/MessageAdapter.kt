@@ -47,48 +47,41 @@ class MessageAdapter(
         val isMe = message.senderId == currentUserId
 
         val density = holder.itemView.context.resources.displayMetrics.density
-        val padText = (8 * density).toInt()
-        val padImage = (2 * density).toInt()
+        val pad = (8 * density).toInt()
 
-        // --- Hiển thị nội dung tin nhắn ---
-        when {
-            message.deleted -> {
-                holder.imgMessage.visibility = View.GONE
-                holder.txtMessage.visibility = View.VISIBLE
-                holder.txtMessage.text = "Tin nhắn này đã bị thu hồi"
-                holder.txtMessage.setTypeface(null, Typeface.ITALIC)
-                holder.txtMessage.setTextColor(Color.GRAY)
-                holder.bubble.setPadding(padText, padText, padText, padText)
+        if (message.deleted) {
+            // --- Tin nhắn đã bị xóa ---
+            holder.imgMessage.visibility = View.GONE
+            holder.txtMessage.visibility = View.VISIBLE
+            holder.txtMessage.text = "Tin nhắn đã bị xóa"
+            holder.txtMessage.setTypeface(null, Typeface.ITALIC)
+            holder.txtMessage.setTextColor(Color.GRAY)
+            holder.bubble.setBackgroundColor(Color.parseColor("#E0E0E0")) // nền xám dịu
+            holder.bubble.setPadding(pad, pad, pad, pad)
+        } else if (!message.imageUrl.isNullOrEmpty()) {
+            // --- Tin nhắn ảnh ---
+            holder.txtMessage.visibility = View.GONE
+            holder.imgMessage.visibility = View.VISIBLE
+
+            Glide.with(holder.itemView.context)
+                .load(message.imageUrl)
+                .placeholder(R.drawable.ic_image_placeholder)
+                .centerCrop()
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .into(holder.imgMessage)
+
+            holder.imgMessage.setOnClickListener {
+                val context = holder.itemView.context
+                val intent = Intent(context, FullImageActivity::class.java)
+                intent.putExtra("imageUrl", message.imageUrl)
+                context.startActivity(intent)
             }
-
-            !message.imageUrl.isNullOrEmpty() -> {
-                holder.txtMessage.visibility = View.GONE
-                holder.imgMessage.visibility = View.VISIBLE
-
-                Glide.with(holder.itemView.context)
-                    .load(message.imageUrl)
-                    .placeholder(R.drawable.ic_image_placeholder)
-                    .centerCrop()
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(holder.imgMessage)
-
-                holder.imgMessage.setOnClickListener {
-                    val context = holder.itemView.context
-                    val intent = Intent(context, FullImageActivity::class.java)
-                    intent.putExtra("imageUrl", message.imageUrl)
-                    context.startActivity(intent)
-                }
-
-                holder.bubble.setPadding(padImage, padImage, padImage, padImage)
-            }
-
-            else -> {
-                holder.imgMessage.visibility = View.GONE
-                holder.txtMessage.visibility = View.VISIBLE
-                holder.txtMessage.text = message.text
-                holder.txtMessage.setTypeface(null, Typeface.NORMAL)
-                holder.bubble.setPadding(padText, padText, padText, padText)
-            }
+        } else {
+            // --- Tin nhắn text bình thường ---
+            holder.imgMessage.visibility = View.GONE
+            holder.txtMessage.visibility = View.VISIBLE
+            holder.txtMessage.text = message.text
+            holder.txtMessage.setTextColor(Color.BLACK)
         }
 
         // --- Căn hướng bong bóng ---
@@ -125,16 +118,16 @@ class MessageAdapter(
             if (isMe && !message.deleted) {
                 val popup = PopupMenu(holder.txtMessage.context, holder.txtMessage)
                 popup.menuInflater.inflate(R.menu.message_menu, popup.menu)
+
+                // Ảnh thì không cho sửa
+                if (!message.imageUrl.isNullOrEmpty()) {
+                    popup.menu.removeItem(R.id.action_edit)
+                }
+
                 popup.setOnMenuItemClickListener {
                     when (it.itemId) {
-                        R.id.action_edit -> {
-                            onEditMessage(message)
-                            true
-                        }
-                        R.id.action_delete -> {
-                            onDeleteMessage(message)
-                            true
-                        }
+                        R.id.action_edit -> { onEditMessage(message); true }
+                        R.id.action_delete -> { onDeleteMessage(message); true }
                         else -> false
                     }
                 }

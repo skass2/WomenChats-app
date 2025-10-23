@@ -7,6 +7,7 @@ data class Message(
     val senderId: String = "",     // Email người gửi (optional cho Firestore)
     var text: String = "",            // Nội dung tin nhắn
     val imageUrl: String? = null, // Link ảnh, có thể null
+    val videoUrl: String? = null, // Link video, có thể null
     var deleted: Boolean = false,     // Đánh dấu đã xoá hay chưa
     val timestamp: Timestamp = Timestamp.now() // Thời điểm gửi
 )

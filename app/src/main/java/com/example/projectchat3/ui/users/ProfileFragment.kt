@@ -23,7 +23,7 @@ class ProfileFragment : Fragment() {
     private lateinit var imgAvatar: ImageView
     private lateinit var tvName: TextView
     private lateinit var tvEmail: TextView
-    private lateinit var btnChangeAvatar: Button
+    private lateinit var btnChangeAvatar: ImageButton
     private lateinit var btnLogout: Button
     private lateinit var progressBar: ProgressBar
 

@@ -16,7 +16,7 @@ class ChatRepository(private val db: FirebaseFirestore) {
         db.collection("chats").document(chatId).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    //Chat đã tồn tại, trả về ID
+                    //Chats đã tồn tại, trả về ID
                     onResult(doc.id)
                 } else {
                     //Chưa có -> tạo mới với ID đã được chuẩn hóa
@@ -56,7 +56,6 @@ class ChatRepository(private val db: FirebaseFirestore) {
         db.collection("chats").document(roomId).set(chatUpdate, SetOptions.merge())
     }
 
-
     fun listenMessages(roomId: String, onChange: (List<Message>) -> Unit) {
         db.collection("chats")
             .document(roomId)
@@ -85,13 +84,14 @@ class ChatRepository(private val db: FirebaseFirestore) {
             .document(messageId)
             .update(
                 mapOf(
-                    "text" to "",        // để trống text
-                    "deleted" to true    // đánh dấu đã xoá
+                    "deleted" to true
                 )
             )
             .addOnSuccessListener { onResult(true) }
             .addOnFailureListener { onResult(false) }
     }
+
+
 
     fun sendImageMessage(
         roomId: String,
@@ -122,5 +122,36 @@ class ChatRepository(private val db: FirebaseFirestore) {
                 onResult(false)
             }
     }
+
+    fun sendVideoMessage(
+        roomId: String,
+        videoUri: Uri,
+        senderId: String,
+        participants: List<String>,
+        onResult: (Boolean) -> Unit
+    ) {
+        val fileName = "${UUID.randomUUID()}.mp4"
+        val storageRef = storage.reference.child("chat_videos/$roomId/$fileName")
+
+        // 1. Upload video lên Storage
+        storageRef.putFile(videoUri)
+            .addOnSuccessListener {
+                // 2. Lấy URL video
+                storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                    // 3. Tạo tin nhắn chứa URL video
+                    val message = Message(
+                        senderId = senderId,
+                        videoUrl = downloadUrl.toString(),
+                        text = "" // Tin nhắn video không có text
+                    )
+                    // 4. Gửi tin nhắn đi
+                    sendMessage(roomId, message, participants, onResult)
+                }
+            }
+            .addOnFailureListener {
+                onResult(false)
+            }
+    }
+
 
 }

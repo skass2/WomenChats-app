@@ -51,3 +51,8 @@ so11:
 	*Sửa 1 chút layout
 	*Sửa lại khung tin nhắn khi gửi ảnh
 	*Thêm tính năng xem ảnh
+so12:
+	*Update layout
+	*Sửa tính năng đăng ký, liên kết với class verify đã sẵn có: Đăng ký -> Chờ chứng thực -> Đăng nhập
+so13:
+	*Hiện tại đang sửa phần "Sửa" + "Xóa" tin nhắn
