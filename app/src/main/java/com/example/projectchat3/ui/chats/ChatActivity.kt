@@ -35,27 +35,51 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var currentUserId: String
     private lateinit var chatUserId: String
     private lateinit var chatId: String
-    private lateinit var btnAttachImage: ImageView
+    private lateinit var btnAttach: ImageView
 
     private val viewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(ChatRepository(FirebaseFirestore.getInstance()), application)
     }
 
-    // --- Permission & Image Picker ---
+    // --- Permission & File Picker ---
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                imagePickerLauncher.launch("image/*")
+                filePickerLauncher.launch(arrayOf("image/*", "video/*"))
             } else {
-                Toast.makeText(this, "Bạn cần cấp quyền để gửi ảnh.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Bạn cần cấp quyền để gửi ảnh hoặc video.", Toast.LENGTH_SHORT).show()
             }
         }
 
-    private val imagePickerLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+    private val filePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             uri?.let {
-                val participants = listOf(currentUserId, chatUserId)
-                viewModel.sendImageMessage(it, participants)
+                try {
+                    val fileSize = contentResolver.openFileDescriptor(it, "r")?.statSize ?: 0
+                    val maxSize = 50 * 1024 * 1024L // 50MB
+
+                    if (fileSize > maxSize) {
+                        Toast.makeText(this, "Tệp vượt quá giới hạn 50MB!", Toast.LENGTH_SHORT).show()
+                        return@let
+                    }
+
+                    val mimeType = contentResolver.getType(it)
+                    val participants = listOf(currentUserId, chatUserId)
+
+                    when {
+                        mimeType?.startsWith("image") == true -> {
+                            viewModel.sendImageMessage(it, participants)
+                        }
+                        mimeType?.startsWith("video") == true -> {
+                            viewModel.sendVideoMessage(it, participants)
+                        }
+                        else -> Toast.makeText(this, "Định dạng không được hỗ trợ.", Toast.LENGTH_SHORT).show()
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(this, "Lỗi xử lý tệp: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     // --- End ---
@@ -91,8 +115,8 @@ class ChatActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
 
-        btnAttachImage = findViewById(R.id.btnAttach)
-        btnAttachImage.setOnClickListener { checkPermissionAndPickImage() }
+        btnAttach = findViewById(R.id.btnAttach)
+        btnAttach.setOnClickListener { checkPermissionAndPickFile() }
 
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewMessages)
         recyclerView.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
@@ -141,7 +165,7 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkPermissionAndPickImage() {
+    private fun checkPermissionAndPickFile() {
         val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             Manifest.permission.READ_MEDIA_IMAGES
         else
@@ -149,7 +173,7 @@ class ChatActivity : AppCompatActivity() {
 
         when {
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED ->
-                imagePickerLauncher.launch("image/*")
+                filePickerLauncher.launch(arrayOf("image/*", "video/*"))
             else ->
                 requestPermissionLauncher.launch(permission)
         }
@@ -181,4 +205,5 @@ class ChatActivity : AppCompatActivity() {
             .setNegativeButton("Hủy", null)
             .show()
     }
+
 }

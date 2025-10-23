@@ -79,6 +79,21 @@ class ChatViewModel(private val repo: ChatRepository, private val app: Applicati
             }
         }
     }
+    fun sendVideoMessage(videoUri: Uri, participants: List<String>) {
+        val senderId = com.google.firebase.auth.FirebaseAuth.getInstance().uid ?: return
+        repo.getOrCreateChat(participants) { chatId ->
+            if (chatId != null) {
+                repo.sendVideoMessage(chatId, videoUri, senderId, participants) { success ->
+                    if (!success) {
+                        Toast.makeText(app, "❌ Gửi video thất bại!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                Toast.makeText(app, "❌ Không thể tạo phòng chat!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
 }
 
 class ChatViewModelFactory(
