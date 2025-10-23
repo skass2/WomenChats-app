@@ -72,7 +72,7 @@ class ChatRepository(private val db: FirebaseFirestore) {
             .document(roomId)
             .collection("messages")
             .document(messageId)
-            .update("text", newText)
+            .update("text", newText, "edited", true, "senderId", com.google.firebase.auth.FirebaseAuth.getInstance().uid)
             .addOnSuccessListener { onResult(true) }
             .addOnFailureListener { onResult(false) }
     }
@@ -84,7 +84,8 @@ class ChatRepository(private val db: FirebaseFirestore) {
             .document(messageId)
             .update(
                 mapOf(
-                    "deleted" to true
+                    "deleted" to true,
+                    "senderId" to com.google.firebase.auth.FirebaseAuth.getInstance().uid
                 )
             )
             .addOnSuccessListener { onResult(true) }
