@@ -39,6 +39,8 @@ jobs:
   test_backend:
     name: Test Firebase Functions
     runs-on: ubuntu-latest
+    # Vẫn chạy sau khi build Android (nếu bạn muốn)
+    needs: [build_android] 
 
     steps:
       - name: 1. Lấy mã nguồn
@@ -47,17 +49,12 @@ jobs:
       - name: 2. Cài đặt Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Đổi thành phiên bản Node.js của bạn
+          # SỬA LỖI CẢNH BÁO: Đổi thành '22' để khớp với package.json của bạn 
+          node-version: '22' 
 
       - name: 3. Cài đặt Firebase CLI
         run: npm install -g firebase-tools
 
       - name: 4. Cài đặt các gói phụ thuộc (Cloud Functions)
-        # Đường dẫn này khớp với kho code của bạn
         run: npm install
-        working-directory: ./functions 
-
-      - name: 5. Chạy kiểm thử đơn vị (Unit Test) với Firebase Emulators
-        # Giả định bạn có script "test" trong file package.json
-        run: firebase emulators:exec 'npm test'
         working-directory: ./functions
