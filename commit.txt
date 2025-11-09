@@ -57,4 +57,4 @@ so12:
 so13:
 	*Hiện tại đang sửa phần "Sửa" + "Xóa" tin nhắn
 
-feat: Thêm quy trình CD tự động deploy
+feat: Thêm file cấu hình CI/CD
