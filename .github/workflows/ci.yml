@@ -1,0 +1,67 @@
+# Tên của quy trình CI (Tích hợp liên tục)
+name: Womenchat CI - Build & Test
+
+# Kích hoạt khi:
+# 1. Push lên bất kỳ nhánh nào TRỪ 'master'
+# 2. Mở Pull Request nhắm vào 'master'
+on:
+  push:
+    branches-ignore:
+      - 'master'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  # === CÔNG VIỆC 1: BUILD ỨNG DỤNG ANDROID ===
+  build_android:
+    name: Build Android App (Gradle)
+    runs-on: ubuntu-latest # Chạy trên máy ảo Ubuntu
+
+    steps:
+      - name: 1. Lấy mã nguồn (Checkout code)
+        uses: actions/checkout@v4
+
+      - name: 2. Cài đặt Java (cho Gradle)
+        # Dự án của bạn đang dùng Java 1.8, nhưng chúng ta nên dùng Java 11 hoặc 17 để build
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' 
+
+      - name: 3. Thiết lập Gradle Cache (Để build nhanh hơn)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 4. Cấp quyền thực thi cho gradlew
+        run: chmod +x ./gradlew
+
+      - name: 5. Chạy Build và Test (cho Android)
+        # Lệnh 'build' sẽ tự động chạy 'test' và 'assembleDebug'
+        run: ./gradlew build
+
+  # === CÔNG VIỆC 2: TEST BACKEND (FIREBASE) ===
+  test_backend:
+    name: Test Firebase Functions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: 2. Cài đặt Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Đổi thành phiên bản Node.js của bạn
+
+      - name: 3. Cài đặt Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: 4. Cài đặt các gói phụ thuộc (Cloud Functions)
+        # Đường dẫn này khớp với kho code của bạn
+        run: npm install
+        working-directory: ./functions 
+
+      - name: 5. Chạy kiểm thử đơn vị (Unit Test) với Firebase Emulators
+        # Giả định bạn có script "test" trong file package.json
+        run: firebase emulators:exec 'npm test'
+        working-directory: ./functions
