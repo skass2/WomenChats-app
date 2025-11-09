@@ -38,22 +38,27 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    //  Đổi tên hiển thị
-    fun changeUserName(newName: String) {
+    // ProfileViewModel.kt
+
+    fun changeUserName(newName: String, callback: (Boolean, String?) -> Unit) {
         if (newName.isBlank()) {
-            _error.value = "Tên không được để trống"
+            callback(false, "Tên không được để trống")
             return
         }
+
         _loading.value = true
         repo.updateUserName(newName) { success ->
             _loading.postValue(false)
             if (success) {
+                // Cập nhật LiveData user trong ViewModel
                 _user.value = _user.value?.copy(name = newName)
+                callback(true, null)
             } else {
-                _error.postValue("Cập nhật tên thất bại")
+                callback(false, "Cập nhật tên thất bại")
             }
         }
     }
+
 
     //  Đổi avatar (upload Firebase Storage + Firestore)
     fun changeAvatar(uri: Uri) {

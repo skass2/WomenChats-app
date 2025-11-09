@@ -56,3 +56,5 @@ so12:
 	*Sửa tính năng đăng ký, liên kết với class verify đã sẵn có: Đăng ký -> Chờ chứng thực -> Đăng nhập
 so13:
 	*Hiện tại đang sửa phần "Sửa" + "Xóa" tin nhắn
+
+feat: Thêm quy trình CD tự động deploy
