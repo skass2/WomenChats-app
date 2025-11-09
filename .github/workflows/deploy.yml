@@ -1,0 +1,88 @@
+# Tên của quy trình CD (Triển khai liên tục)
+name: Womenchat CD - Deploy to Firebase
+
+# -------------------------------------------------------------------
+# PHẦN KÍCH HOẠT (TRIGGER)
+# -------------------------------------------------------------------
+on:
+  push:
+    # CHỈ chạy khi có PUSH (hoặc merge) vào nhánh `master`
+    branches:
+      - 'master' # <-- Tên nhánh chính của bạn là 'main' hay 'master'? 
+                   # Hãy sửa lại cho đúng. (Lệnh của bạn bị lỗi là 'main')
+                   # Tôi sẽ dùng 'main' cho ví dụ này
+      - 'main' 
+
+# -------------------------------------------------------------------
+# PHẦN CÁC CÔNG VIỆC (JOBS)
+# -------------------------------------------------------------------
+jobs:
+  # === CÔNG VIỆC 1: DEPLOY BACKEND VÀ CẤU HÌNH ===
+  deploy_firebase:
+    name: Deploy Backend & Rules
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 1. Lấy mã nguồn (Checkout code)
+        uses: actions/checkout@v4
+
+      - name: 2. Cài đặt Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Đổi nếu cần
+
+      - name: 3. Cài đặt Firebase CLI
+        run: npm install -g firebase-tools
+      
+      - name: 4. Cài đặt các gói phụ thuộc (Cloud Functions)
+        run: npm install
+        # Đường dẫn này khớp với ảnh chụp của bạn
+        working-directory: ./functions 
+        
+      - name: 5. Triển khai lên Firebase
+        # (Bài 8) Đây là bước Deploy tự động
+        # Nó sẽ deploy code trong 'functions' và các file rules ở gốc
+        run: |
+          firebase deploy \
+            --only functions,firestore:rules,storage:rules \
+            --non-interactive \
+            --token "${{ secrets.FIREBASE_TOKEN }}" # <-- Sử dụng bí mật!
+            
+  # === CÔNG VIỆC 2: BUILD VÀ PHÂN PHỐI APP ANDROID ===
+  distribute_android:
+    name: Build & Distribute Android
+    runs-on: ubuntu-latest
+    # Chạy song song với job deploy_firebase
+    
+    steps:
+      - name: 1. Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: 2. Cài đặt Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. Thiết lập Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+        
+      - name: 4. Cấp quyền thực thi cho gradlew
+        run: chmod +x ./gradlew
+        
+      - name: 5. Build file APK (bản Debug)
+        # Đường dẫn 'app/build/outputs/apk/debug/app-debug.apk' khớp với 
+        # cấu trúc dự án Android tiêu chuẩn
+        run: ./gradlew assembleDebug
+        
+      - name: 6. Phân phối App lên Firebase App Distribution
+        # (Bài 8) Đây là bước Release cho tester
+        uses: w9jds/firebase-action@master
+        with:
+          args: |
+            appdistribution:distribute app/build/outputs/apk/debug/app-debug.apk \
+              --app "${{ secrets.FIREBASE_APP_ID }}" \
+              --groups "qa-team" # <-- Sửa tên nhóm tester của bạn
+        env:
+          # Sử dụng bí mật để xác thực
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
