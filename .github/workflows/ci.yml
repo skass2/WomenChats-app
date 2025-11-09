@@ -1,16 +1,12 @@
-# Tên của quy trình CI (Tích hợp liên tục)
 name: Womenchat CI - Build & Test
 
-# Kích hoạt khi:
-# 1. Push lên bất kỳ nhánh nào TRỪ 'master'
-# 2. Mở Pull Request nhắm vào 'master'
 on:
   push:
     branches-ignore:
-      - 'master'
+      - 'main'
   pull_request:
     branches:
-      - 'master'
+      - 'main'
 
 jobs:
   # === CÔNG VIỆC 1: BUILD ỨNG DỤNG ANDROID ===
